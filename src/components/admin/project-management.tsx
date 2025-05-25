@@ -60,12 +60,15 @@ const ProjectManagement: React.FC = () => {
           throw new Error('Name and source repository are required');
         }
         
+        // Ensure active is properly converted to boolean
+        const activeValue = formData.active === true || formData.active === 'true' || formData.active === undefined;
+        
         const { error } = await supabase
           .from('daveops_deployment_projects')
           .insert([{
             ...formData,
             github_repo: formData.source_repo,
-            active: Boolean(formData.active ?? true)
+            active: activeValue
           } as any]);
         
         if (error) throw error;
@@ -75,7 +78,6 @@ const ProjectManagement: React.FC = () => {
           description: 'New deployment project has been created successfully.',
         });
 
-        // Create comprehensive changelog entry for project creation
         await createEntry({
           title: `AI-Assisted: Created new deployment project: ${formData.name}`,
           description: `Added new 3-stage deployment project with DEV → STAGE → PROD pipeline using AI assistance`,
@@ -100,12 +102,15 @@ const ProjectManagement: React.FC = () => {
         });
         
       } else {
+        // Ensure active is properly converted to boolean for updates too
+        const activeValue = formData.active === true || formData.active === 'true';
+        
         const { error } = await supabase
           .from('daveops_deployment_projects')
           .update({
             ...formData,
             github_repo: formData.source_repo,
-            active: Boolean(formData.active ?? true)
+            active: activeValue
           })
           .eq('id', editingProject);
         
@@ -116,7 +121,6 @@ const ProjectManagement: React.FC = () => {
           description: 'Project configuration has been updated.',
         });
 
-        // Create comprehensive changelog entry for project update
         await createEntry({
           title: `AI-Assisted: Updated deployment project: ${formData.name}`,
           description: `Modified configuration for 3-stage deployment project using AI assistance`,
@@ -149,7 +153,6 @@ const ProjectManagement: React.FC = () => {
         variant: 'destructive',
       });
 
-      // Log error in changelog
       await createEntry({
         title: `Error: Failed to ${newProject ? 'create' : 'update'} project: ${formData.name}`,
         description: `Project ${newProject ? 'creation' : 'update'} failed with error: ${error.message}`,
