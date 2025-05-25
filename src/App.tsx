@@ -24,8 +24,15 @@ import AdminTests from "./pages/AdminTests";
 
 const queryClient = new QueryClient();
 
-// Get the base path from Vite's base configuration
-const basename = import.meta.env.BASE_URL;
+// Determine base path based on domain
+const getBasePath = () => {
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    const isCustomDomain = hostname === 'dave-ops.net' || hostname === 'www.dave-ops.net';
+    return isCustomDomain ? '/' : import.meta.env.BASE_URL;
+  }
+  return import.meta.env.BASE_URL;
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -33,7 +40,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter basename={basename}>
+        <BrowserRouter basename={getBasePath()}>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/portfolio" element={<Portfolio />} />

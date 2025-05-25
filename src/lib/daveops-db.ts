@@ -1,5 +1,5 @@
 
-import { supabase, getTableName } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 
 // Dave Ops Portfolio specific database operations
 export const daveopsDb = {
@@ -37,6 +37,17 @@ export const daveopsDb = {
       return data;
     }
   }
+};
+
+// Application-specific table prefixes for data isolation
+export const TABLE_PREFIXES = {
+  DAVEOPS: 'daveops_',
+  SHARED: '' // For shared tables like profiles
+} as const;
+
+// Helper function to get table name with proper prefix
+export const getTableName = (tableName: string, prefix: keyof typeof TABLE_PREFIXES = 'DAVEOPS') => {
+  return `${TABLE_PREFIXES[prefix]}${tableName}`;
 };
 
 // Type-safe table name helper specifically for Dave Ops

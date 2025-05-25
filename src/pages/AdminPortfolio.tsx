@@ -1,12 +1,11 @@
 
 import React from 'react';
 import AdminLayout from '@/components/admin/admin-layout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import PortfolioForm from '@/components/admin/portfolio/portfolio-form';
-import PortfolioTable from '@/components/admin/portfolio/portfolio-table';
 import { usePortfolioManagement } from '@/components/admin/portfolio/use-portfolio-management';
+import PortfolioEditor from '@/components/admin/portfolio/portfolio-editor';
+import PortfolioList from '@/components/admin/portfolio/portfolio-list';
 
 const AdminPortfolio = () => {
   const {
@@ -46,36 +45,21 @@ const AdminPortfolio = () => {
         </div>
 
         {isCreating && (
-          <Card>
-            <CardHeader>
-              <CardTitle>{editingProject ? 'Edit Project' : 'Create New Project'}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <PortfolioForm
-                formData={formData}
-                setFormData={setFormData}
-                onSubmit={handleSubmit}
-                onCancel={resetForm}
-                isEditing={!!editingProject}
-              />
-            </CardContent>
-          </Card>
+          <PortfolioEditor
+            formData={formData}
+            setFormData={setFormData}
+            onSubmit={handleSubmit}
+            onCancel={resetForm}
+            isEditing={!!editingProject}
+          />
         )}
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Projects</CardTitle>
-            <CardDescription>Manage your portfolio projects</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <PortfolioTable
-              projects={projects}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onTogglePublished={togglePublished}
-            />
-          </CardContent>
-        </Card>
+        <PortfolioList
+          projects={projects}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onTogglePublished={togglePublished}
+        />
       </div>
     </AdminLayout>
   );

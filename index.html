@@ -34,8 +34,13 @@
           var decoded = l.search.slice(1).split('&').map(function(s) { 
             return s.replace(/~and~/g, '&')
           }).join('?');
+          
+          // Handle custom domain vs GitHub Pages subdirectory
+          var isCustomDomain = l.hostname === 'dave-ops.net' || l.hostname === 'www.dave-ops.net';
+          var pathPrefix = isCustomDomain ? '' : l.pathname.slice(0, -1);
+          
           window.history.replaceState(null, null,
-              l.pathname.slice(0, -1) + decoded + l.hash
+              pathPrefix + decoded + l.hash
           );
         }
       }(window.location))
