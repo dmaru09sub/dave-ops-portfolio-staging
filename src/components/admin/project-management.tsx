@@ -55,7 +55,7 @@ const ProjectManagement: React.FC = () => {
           <h3 className="text-lg font-semibold">Projects ({projects.length})</h3>
           <Button
             onClick={handleNewProject}
-            disabled={newProject || editingProject}
+            disabled={newProject || editingProject !== null}
           >
             <Plus className="h-4 w-4 mr-2" />
             Add Project
