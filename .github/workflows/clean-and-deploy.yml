@@ -35,9 +35,6 @@ jobs:
         git config --global user.name 'Stage Deploy Bot'
         git config --global user.email 'stage-deploy@dave-ops.net'
         
-    - name: Create stage-specific production workflow
-      run: node scripts/create-prod-workflow.js
-      
     - name: Deploy cleaned source to stage repository
       env:
         PORTFOLIO_TOKEN: ${{ secrets.PORTFOLIO_TOKEN }}
@@ -109,13 +106,6 @@ jobs:
         echo "File count after copy: $(find . -type f ! -path './.git/*' | wc -l)"
         ls -la | head -20
         
-        # Verify the production workflow exists
-        if [ -f ".github/workflows/deploy-to-prod.yml" ]; then
-          echo "✓ Production workflow file exists in stage repo"
-        else
-          echo "❌ Production workflow file missing in stage repo"
-        fi
-        
         # Force add all files including hidden ones
         git add -A
         echo "✓ Added all files to git staging"
@@ -141,7 +131,7 @@ jobs:
         fi
         
         # Commit the changes
-        git commit -m "Deploy cleaned source with production workflow - ${PROJECT_NAME} - $(date)"
+        git commit -m "Deploy cleaned source - ${PROJECT_NAME} - $(date)"
         echo "✓ Committed changes"
         
         # Get current branch name
