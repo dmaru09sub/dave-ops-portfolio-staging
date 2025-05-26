@@ -64,10 +64,23 @@ jobs:
           ./ "$TEMP_DIR/"
         echo "✓ Copied source files to temp directory"
         
-        # Copy the production workflow to the cleaned source
-        mkdir -p "$TEMP_DIR/.github/workflows"
-        cp .github/workflows/build-and-deploy.yml "$TEMP_DIR/.github/workflows/"
-        echo "✓ Copied production workflow to stage repository"
+        # Verify the production workflow exists in source
+        if [ -f ".github/workflows/build-and-deploy.yml" ]; then
+          echo "✓ Production workflow file exists in source repository"
+          # Validate the workflow file is complete
+          if grep -q "Deploy to GitHub Pages" .github/workflows/build-and-deploy.yml; then
+            echo "✓ Production workflow file appears complete"
+          else
+            echo "❌ Production workflow file appears incomplete"
+            exit 1
+          fi
+        else
+          echo "❌ Production workflow file missing in source repository"
+          exit 1
+        fi
+        
+        # Copy the production workflow to the cleaned source (it's already there from rsync)
+        echo "✓ Production workflow already copied with source files"
         
         # Verify what was copied
         echo "=== Files in temp directory ==="
@@ -75,11 +88,21 @@ jobs:
         echo "File count: $(find "$TEMP_DIR" -type f | wc -l)"
         ls -la "$TEMP_DIR/" | head -20
         
-        # Verify the production workflow exists
+        # Verify the production workflow exists in temp directory
         if [ -f "$TEMP_DIR/.github/workflows/build-and-deploy.yml" ]; then
-          echo "✓ Production workflow file exists in stage repo"
+          echo "✓ Production workflow file exists in temp directory"
+          # Check file size to ensure it's not truncated
+          WORKFLOW_SIZE=$(wc -c < "$TEMP_DIR/.github/workflows/build-and-deploy.yml")
+          echo "✓ Production workflow file size: $WORKFLOW_SIZE bytes"
+          if [ "$WORKFLOW_SIZE" -lt 1000 ]; then
+            echo "❌ Production workflow file appears too small (less than 1000 bytes)"
+            echo "Content preview:"
+            head -20 "$TEMP_DIR/.github/workflows/build-and-deploy.yml"
+            exit 1
+          fi
         else
-          echo "❌ Production workflow file missing in stage repo"
+          echo "❌ Production workflow file missing in temp directory"
+          exit 1
         fi
         
         # Clone or initialize the stage repository using token authentication
@@ -118,11 +141,25 @@ jobs:
         echo "File count after copy: $(find . -type f ! -path './.git/*' | wc -l)"
         ls -la | head -20
         
-        # Verify the production workflow exists in the stage repo
+        # Verify the production workflow exists in the stage repo and validate it
         if [ -f ".github/workflows/build-and-deploy.yml" ]; then
           echo "✓ Production workflow file exists in stage repo"
+          STAGE_WORKFLOW_SIZE=$(wc -c < ".github/workflows/build-and-deploy.yml")
+          echo "✓ Production workflow file size in stage repo: $STAGE_WORKFLOW_SIZE bytes"
+          
+          # Validate the workflow file content
+          if grep -q "Deploy to GitHub Pages" .github/workflows/build-and-deploy.yml && \
+             grep -q "WORKFLOW_EOF" .github/workflows/build-and-deploy.yml; then
+            echo "✓ Production workflow file appears complete in stage repo"
+          else
+            echo "❌ Production workflow file appears incomplete in stage repo"
+            echo "Content preview:"
+            head -20 .github/workflows/build-and-deploy.yml
+            exit 1
+          fi
         else
           echo "❌ Production workflow file missing in stage repo"
+          exit 1
         fi
         
         # Force add all files including hidden ones
