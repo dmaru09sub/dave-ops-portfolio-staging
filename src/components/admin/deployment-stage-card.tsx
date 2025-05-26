@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -45,6 +46,7 @@ const DeploymentStageCard: React.FC<DeploymentStageCardProps> = ({ project }) =>
             <DeploymentStatusDisplay 
               deployment={projectStatus?.lastStageDeployment}
               sourceRepo={project.source_repo}
+              deploymentStage="stage"
               loading={loading}
             />
           </div>
@@ -57,6 +59,8 @@ const DeploymentStageCard: React.FC<DeploymentStageCardProps> = ({ project }) =>
             <DeploymentStatusDisplay 
               deployment={projectStatus?.lastProdDeployment}
               sourceRepo={project.source_repo}
+              stageRepo={project.stage_repo || undefined}
+              deploymentStage="prod"
               loading={loading}
             />
           </div>
@@ -139,6 +143,8 @@ const DeploymentStageCard: React.FC<DeploymentStageCardProps> = ({ project }) =>
             <DeploymentStatusDisplay 
               deployment={projectStatus?.lastProdDeployment}
               sourceRepo={project.source_repo}
+              stageRepo={project.stage_repo || undefined}
+              deploymentStage="prod"
               loading={loading}
               showOnlyFinalStatus={true}
             />

@@ -56,27 +56,33 @@ serve(async (req) => {
       })
       .eq('id', deployment_id)
 
-    // Determine target repository and event type based on deployment stage
+    // Determine source repository, target repository and event type based on deployment stage
+    let sourceRepo: string
     let targetRepo: string
     let eventType: string
 
     if (deployment_stage === 'stage') {
+      // DEV → STAGE: Trigger workflow on DEV (source) repo, deploy to STAGE repo
+      sourceRepo = project.source_repo
       targetRepo = project.stage_repo
       eventType = 'deploy-to-stage'
     } else {
+      // STAGE → PROD: Trigger workflow on STAGE repo, deploy to PROD repo
+      sourceRepo = project.stage_repo
       targetRepo = project.prod_repo
       eventType = 'deploy-to-prod' 
     }
 
     console.log('Event type:', eventType)
-    console.log('Target repo:', targetRepo)
+    console.log('Source repo (where workflow runs):', sourceRepo)
+    console.log('Target repo (where files are deployed):', targetRepo)
 
-    if (!targetRepo) {
-      throw new Error(`No ${deployment_stage} repository configured for this project`)
+    if (!sourceRepo || !targetRepo) {
+      throw new Error(`Missing repository configuration for ${deployment_stage} deployment`)
     }
 
-    // Trigger GitHub Actions workflow on source repository
-    console.log('Triggering GitHub Actions workflow on source repo:', project.source_repo)
+    // Trigger GitHub Actions workflow on the correct source repository
+    console.log('Triggering GitHub Actions workflow on source repo:', sourceRepo)
     
     // FIXED: Reduced client_payload to only 3 essential properties to avoid GitHub API 422 error
     const clientPayload = {
@@ -87,7 +93,7 @@ serve(async (req) => {
 
     console.log('Client payload (reduced for GitHub API):', clientPayload)
 
-    const githubResponse = await fetch(`https://api.github.com/repos/${project.source_repo}/dispatches`, {
+    const githubResponse = await fetch(`https://api.github.com/repos/${sourceRepo}/dispatches`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${Deno.env.get('GITHUB_TOKEN')}`,
@@ -121,8 +127,8 @@ serve(async (req) => {
         published: true,
         metadata: {
           deployment_stage,
+          source_repo: sourceRepo,
           target_repo: targetRepo,
-          source_repo: project.source_repo,
           event_type: eventType
         }
       })
@@ -134,6 +140,7 @@ serve(async (req) => {
         success: true, 
         message: `${deployment_stage} deployment triggered successfully`,
         project: project.name,
+        source_repo: sourceRepo,
         target_repo: targetRepo,
         deployment_id: deployment_id
       }),

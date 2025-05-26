@@ -10,19 +10,34 @@ interface DeploymentStatusDisplayProps {
     created_at: string; 
     deployed_at: string | null; 
     error_message: string | null;
+    deployment_stage?: string;
   };
   sourceRepo: string;
+  stageRepo?: string;
   loading: boolean;
   showOnlyFinalStatus?: boolean;
+  deploymentStage?: 'stage' | 'prod';
 }
 
 const DeploymentStatusDisplay: React.FC<DeploymentStatusDisplayProps> = ({ 
   deployment, 
   sourceRepo, 
+  stageRepo,
   loading,
-  showOnlyFinalStatus = false 
+  showOnlyFinalStatus = false,
+  deploymentStage 
 }) => {
-  const actionsUrl = `https://github.com/${sourceRepo}/actions`;
+  // Determine which repository's actions to link to based on the deployment stage
+  const getActionsRepo = () => {
+    if (deploymentStage === 'prod' && stageRepo) {
+      // For STAGE → PROD deployments, link to the stage repository actions
+      return stageRepo;
+    }
+    // For DEV → STAGE deployments, link to the source repository actions
+    return sourceRepo;
+  };
+
+  const actionsUrl = `https://github.com/${getActionsRepo()}/actions`;
 
   if (loading) {
     return (
