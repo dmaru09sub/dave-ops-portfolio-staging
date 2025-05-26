@@ -3,10 +3,11 @@ import React, { useState } from 'react';
 import AdminLayout from '@/components/admin/admin-layout';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Rocket, History, Settings, Activity } from 'lucide-react';
+import { Rocket, History, Settings, Activity, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { deploymentService } from '@/services/deployment-service';
 import { useDeploymentState } from '@/hooks/use-deployment-state';
+import { useDeploymentTimeout } from '@/hooks/use-deployment-timeout';
 import DeploymentTrigger from '@/components/admin/deployment-trigger';
 import DeploymentHistory from '@/components/admin/deployment-history';
 import ProjectManagement from '@/components/admin/project-management';
@@ -17,6 +18,9 @@ const AdminDeployments = () => {
   const [deploying, setDeploying] = useState(false);
   const { deployments, loading, fetchDeployments } = useDeploymentState();
   const { toast } = useToast();
+  
+  // Initialize timeout checking
+  useDeploymentTimeout();
 
   const handleDeployment = async (projectId?: string, stage?: string) => {
     if (!projectId || !stage) {
@@ -61,6 +65,14 @@ const AdminDeployments = () => {
               <p className="text-muted-foreground">
                 Manage your 3-stage deployment pipeline: DEV → STAGE → PROD
               </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button variant="outline" asChild>
+                <a href="https://daveops-portfolio.github.io/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                  <ExternalLink className="h-4 w-4" />
+                  View Live Site
+                </a>
+              </Button>
             </div>
           </div>
 

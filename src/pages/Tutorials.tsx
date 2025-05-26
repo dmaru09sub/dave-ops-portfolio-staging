@@ -1,12 +1,12 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { SiteHeader } from "@/components/site-header";
 import MainLayout from "@/components/layouts/main-layout";
-import { Youtube, Clock, Calendar } from "lucide-react";
+import { Clock, ExternalLink, GitBranch } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
+import { Link } from 'react-router-dom';
 import type { Json } from '@/integrations/supabase/types';
 
 interface Tutorial {
@@ -14,57 +14,54 @@ interface Tutorial {
   title: string;
   description: string;
   content: string;
-  difficulty_level: string;
-  estimated_duration: number;
+  image_url?: string;
+  difficulty_level?: string;
+  estimated_duration?: number;
   tags: Json;
-  image_url: string;
   published: boolean;
   coming_soon: boolean;
   sort_order: number;
   created_at: string;
+  updated_at: string;
 }
 
 const Tutorials = () => {
   const [tutorials, setTutorials] = useState<Tutorial[]>([]);
   const [loading, setLoading] = useState(true);
-  const [youtubeUrl, setYoutubeUrl] = useState<string>('');
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchTutorials = async () => {
       try {
-        // Fetch tutorials
-        const { data: tutorialsData, error: tutorialsError } = await supabase
+        const { data, error } = await supabase
           .from('daveops_tutorials')
           .select('*')
           .eq('published', true)
           .order('sort_order', { ascending: true });
 
-        if (tutorialsError) throw tutorialsError;
-        setTutorials(tutorialsData || []);
-
-        // Fetch YouTube URL from site info
-        const { data: siteInfoData, error: siteInfoError } = await supabase
-          .from('daveops_site_info')
-          .select('setting_value')
-          .eq('setting_key', 'youtube_url')
-          .single();
-
-        if (!siteInfoError && siteInfoData) {
-          setYoutubeUrl(siteInfoData.setting_value || '');
-        }
+        if (error) throw error;
+        setTutorials(data || []);
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('Error fetching tutorials:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
+    fetchTutorials();
   }, []);
 
-  const getTags = (tags: Json): string[] => {
+  const getDifficultyColor = (level?: string) => {
+    switch (level?.toLowerCase()) {
+      case 'beginner': return 'bg-green-100 text-green-800';
+      case 'intermediate': return 'bg-yellow-100 text-yellow-800';
+      case 'advanced': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getTagsArray = (tags: Json): string[] => {
     if (Array.isArray(tags)) {
-      return tags.filter((tag): tag is string => typeof tag === 'string');
+      return tags.filter(tag => typeof tag === 'string') as string[];
     }
     return [];
   };
@@ -77,13 +74,12 @@ const Tutorials = () => {
           <div className="max-w-4xl mx-auto">
             <div className="animate-pulse space-y-8">
               <div className="text-center space-y-4">
-                <div className="h-16 w-16 bg-gray-200 rounded mx-auto"></div>
                 <div className="h-10 bg-gray-200 rounded w-1/2 mx-auto"></div>
                 <div className="h-6 bg-gray-200 rounded w-3/4 mx-auto"></div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className="h-64 bg-gray-200 rounded-lg"></div>
+              <div className="grid gap-6">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="h-48 bg-gray-200 rounded-lg"></div>
                 ))}
               </div>
             </div>
@@ -93,9 +89,6 @@ const Tutorials = () => {
     );
   }
 
-  const comingSoonTutorials = tutorials.filter(t => t.coming_soon);
-  const availableTutorials = tutorials.filter(t => !t.coming_soon);
-
   return (
     <MainLayout>
       <SiteHeader />
@@ -103,140 +96,80 @@ const Tutorials = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
-            <Youtube className="w-16 h-16 text-primary mx-auto mb-4" />
-            <h1 className="text-4xl font-bold tracking-tight mb-4">YouTube Tutorials</h1>
+            <h1 className="text-4xl font-bold tracking-tight mb-4">DevOps Tutorials</h1>
             <p className="text-xl text-muted-foreground">
-              DevOps and cloud engineering tutorials
+              Learn modern DevOps practices, cloud architecture, and automation techniques
             </p>
           </div>
 
-          {availableTutorials.length > 0 && (
-            <div className="mb-12">
-              <h2 className="text-2xl font-bold mb-6">Available Tutorials</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {availableTutorials.map((tutorial) => (
-                  <Card key={tutorial.id} className="relative overflow-hidden">
-                    <CardHeader>
-                      <CardTitle className="text-lg">{tutorial.title}</CardTitle>
-                      <CardDescription>{tutorial.description}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-4 h-4" />
-                          <span>{tutorial.estimated_duration} min</span>
-                        </div>
-                        {tutorial.difficulty_level && (
-                          <Badge variant="secondary" className="text-xs">
-                            {tutorial.difficulty_level}
-                          </Badge>
-                        )}
+          <div className="space-y-6">
+            {}
+            {tutorials.length > 0 ? (
+              tutorials.map((tutorial) => (
+                <Card key={tutorial.id}>
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle>{tutorial.title}</CardTitle>
+                        <CardDescription>{tutorial.description}</CardDescription>
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        {getTags(tutorial.tags).map((tag) => (
-                          <Badge key={tag} variant="outline" className="text-xs">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {comingSoonTutorials.length > 0 && (
-            <div className="mb-8">
-              <Card className="mb-8">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calendar className="w-5 h-5" />
-                    Coming Soon
-                  </CardTitle>
-                  <CardDescription>
-                    I'm currently working on creating comprehensive video tutorials covering various DevOps topics. 
-                    Stay tuned for in-depth content on cloud infrastructure, automation, and best practices.
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {comingSoonTutorials.map((tutorial) => (
-                  <Card key={tutorial.id} className="relative overflow-hidden">
-                    <div className="absolute top-0 right-0 bg-primary text-primary-foreground px-3 py-1 text-xs font-medium">
-                      Coming Soon
+                      {tutorial.coming_soon && (
+                        <Badge variant="outline">Coming Soon</Badge>
+                      )}
                     </div>
-                    <CardHeader>
-                      <CardTitle className="text-lg">{tutorial.title}</CardTitle>
-                      <CardDescription>{tutorial.description}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Clock className="w-4 h-4" />
-                        <span>{tutorial.estimated_duration} min</span>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {tutorial.content && (
+                        <p className="text-muted-foreground line-clamp-3">
+                          {tutorial.content.substring(0, 200)}...
+                        </p>
+                      )}
+                      
+                      {tutorial.tags && getTagsArray(tutorial.tags).length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {getTagsArray(tutorial.tags).map((tag, index) => (
+                            <Badge key={index} variant="outline">{tag}</Badge>
+                          ))}
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center justify-between pt-4">
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          {tutorial.estimated_duration && (
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-4 w-4" />
+                              {tutorial.estimated_duration} min read
+                            </div>
+                          )}
+                          {tutorial.difficulty_level && (
+                            <Badge className={getDifficultyColor(tutorial.difficulty_level)}>
+                              {tutorial.difficulty_level}
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        <Button variant="outline" disabled={tutorial.coming_soon}>
+                          {tutorial.coming_soon ? 'Coming Soon' : 'Read Tutorial'}
+                          {!tutorial.coming_soon && <ExternalLink className="h-4 w-4 ml-2" />}
+                        </Button>
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        {getTags(tutorial.tags).map((tag) => (
-                          <Badge key={tag} variant="secondary" className="text-xs">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {tutorials.length === 0 && !loading && (
-            <div className="text-center">
-              <Card className="p-8">
-                <h3 className="text-xl font-semibold mb-4">No tutorials available yet</h3>
-                <p className="text-muted-foreground mb-6">
-                  Check back soon for new DevOps and cloud engineering tutorials.
-                </p>
-                {youtubeUrl ? (
-                  <Button size="lg" className="flex items-center gap-2 mx-auto" asChild>
-                    <a href={youtubeUrl} target="_blank" rel="noreferrer">
-                      <Youtube className="w-5 h-5" />
-                      Subscribe on YouTube
-                    </a>
-                  </Button>
-                ) : (
-                  <Button size="lg" className="flex items-center gap-2 mx-auto">
-                    <Youtube className="w-5 h-5" />
-                    Subscribe on YouTube
-                  </Button>
-                )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <h3 className="text-xl font-semibold mb-4">More tutorials coming soon!</h3>
+                  <p className="text-muted-foreground">
+                    I'm working on creating comprehensive tutorials covering DevOps best practices, 
+                    cloud architecture patterns, and automation workflows.
+                  </p>
+                </CardContent>
               </Card>
-            </div>
-          )}
-
-          {tutorials.length > 0 && (
-            <div className="text-center mt-12">
-              <Card className="p-8">
-                <h3 className="text-xl font-semibold mb-4">Want to be notified?</h3>
-                <p className="text-muted-foreground mb-6">
-                  Subscribe to my channel and get notified when new DevOps tutorials are released.
-                </p>
-                {youtubeUrl ? (
-                  <Button size="lg" className="flex items-center gap-2 mx-auto" asChild>
-                    <a href={youtubeUrl} target="_blank" rel="noreferrer">
-                      <Youtube className="w-5 h-5" />
-                      Subscribe on YouTube
-                    </a>
-                  </Button>
-                ) : (
-                  <Button size="lg" className="flex items-center gap-2 mx-auto">
-                    <Youtube className="w-5 h-5" />
-                    Subscribe on YouTube
-                  </Button>
-                )}
-              </Card>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </MainLayout>

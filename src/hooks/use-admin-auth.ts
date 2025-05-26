@@ -61,10 +61,22 @@ export const useAdminAuth = () => {
     }
   };
 
+  const logout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      setIsAdmin(false);
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
   return {
     isAdmin,
+    isAuthenticated: isAdmin,
     loading,
     adminSignIn,
+    logout,
     user,
     session
   };

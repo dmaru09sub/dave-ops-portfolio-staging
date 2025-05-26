@@ -41,6 +41,21 @@ export interface Tutorial {
   featured?: boolean;
 }
 
+export interface BlogPost {
+  id: string;
+  title: string;
+  excerpt: string;
+  content: string;
+  slug: string;
+  tags: any;
+  featured_image: string;
+  published: boolean;
+  featured: boolean;
+  read_time: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface SiteInfo {
   id: string;
   setting_key: string;
@@ -64,6 +79,7 @@ export interface AboutContent {
 export const useDaveOpsData = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [tutorials, setTutorials] = useState<Tutorial[]>([]);
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [siteInfo, setSiteInfo] = useState<Record<string, string>>({});
   const [aboutContent, setAboutContent] = useState<AboutContent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -90,6 +106,26 @@ export const useDaveOpsData = () => {
 
       if (tutorialsError) throw tutorialsError;
       setTutorials(tutorialsData as Tutorial[] || []);
+
+      // Fetch blog posts
+      try {
+        const { data: blogData, error: blogError } = await supabase
+          .from('daveops_blog_posts' as any)
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (blogError) {
+          console.warn('Blog posts table not found, will be created when needed');
+          setBlogPosts([]);
+        } else if (Array.isArray(blogData)) {
+          setBlogPosts(blogData as BlogPost[]);
+        } else {
+          setBlogPosts([]);
+        }
+      } catch (blogErr) {
+        console.warn('Blog posts not available yet');
+        setBlogPosts([]);
+      }
 
       // Fetch about content
       const { data: aboutData, error: aboutError } = await supabase
@@ -133,6 +169,7 @@ export const useDaveOpsData = () => {
   return {
     projects,
     tutorials,
+    blogPosts,
     siteInfo,
     aboutContent,
     loading,

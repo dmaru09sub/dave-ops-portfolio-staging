@@ -5,14 +5,32 @@ import MainLayout from "@/components/layouts/main-layout";
 import { SiteHeader } from "@/components/site-header";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { useDaveOpsData } from "@/hooks/use-daveops-data";
 
 const Blog = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const { blogPosts, loading } = useDaveOpsData();
   
-  const filteredBlogs = blogPosts.filter(post => 
-    post.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    post.excerpt.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredBlogs = (blogPosts || []).filter(post => 
+    post.published && (
+      post.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      (post.excerpt && post.excerpt.toLowerCase().includes(searchTerm.toLowerCase()))
+    )
   );
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <SiteHeader />
+        <div className="container mx-auto px-4 py-12">
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -25,7 +43,7 @@ const Blog = () => {
               Blog
             </h1>
             <p className="text-muted-foreground">
-              Thoughts, ideas, and updates about web development
+              Thoughts, ideas, and updates about DevOps, cloud architecture, and modern development
             </p>
           </div>
           
@@ -42,17 +60,31 @@ const Blog = () => {
             {filteredBlogs.map((post) => (
               <Card key={post.id} className="hover-lift card-shadow overflow-hidden">
                 <CardHeader className="space-y-1">
-                  <CardTitle className="text-xl hover:text-primary transition-colors">
-                    {post.title}
-                  </CardTitle>
+                  <div className="flex items-start justify-between">
+                    <CardTitle className="text-xl hover:text-primary transition-colors">
+                      {post.title}
+                    </CardTitle>
+                    {post.featured && (
+                      <Badge variant="secondary">Featured</Badge>
+                    )}
+                  </div>
                   <CardDescription className="flex items-center gap-2 text-sm">
-                    <span>{post.date}</span>
+                    <span>{new Date(post.created_at).toLocaleDateString()}</span>
                     <span>•</span>
-                    <span>{post.readTime} min read</span>
+                    <span>{post.read_time} min read</span>
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">{post.excerpt}</p>
+                  {post.tags && Array.isArray(post.tags) && post.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {post.tags.map((tag: string, index: number) => (
+                        <Badge key={index} variant="outline" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
                 <CardFooter>
                   <Link 
@@ -71,7 +103,7 @@ const Blog = () => {
             {filteredBlogs.length === 0 && (
               <div className="text-center py-12">
                 <p className="text-muted-foreground">
-                  No articles found matching your search.
+                  {searchTerm ? "No articles found matching your search." : "No blog posts available yet. Check back soon!"}
                 </p>
               </div>
             )}
@@ -81,41 +113,5 @@ const Blog = () => {
     </MainLayout>
   );
 };
-
-// Sample blog post data
-const blogPosts = [
-  {
-    id: 1,
-    title: "Getting Started with React Hooks",
-    slug: "getting-started-with-react-hooks",
-    date: "April 15, 2025",
-    readTime: 5,
-    excerpt: "Learn how to use React Hooks to build more maintainable and concise components."
-  },
-  {
-    id: 2,
-    title: "Building Responsive Layouts with CSS Grid",
-    slug: "building-responsive-layouts-with-css-grid",
-    date: "April 10, 2025",
-    readTime: 7,
-    excerpt: "A comprehensive guide to creating flexible and responsive layouts using CSS Grid."
-  },
-  {
-    id: 3,
-    title: "Introduction to TypeScript for JavaScript Developers",
-    slug: "introduction-to-typescript-for-javascript-developers",
-    date: "April 5, 2025",
-    readTime: 8,
-    excerpt: "Discover how TypeScript can improve your JavaScript code with static typing."
-  },
-  {
-    id: 4,
-    title: "Web Performance Optimization Techniques",
-    slug: "web-performance-optimization-techniques",
-    date: "March 28, 2025",
-    readTime: 6,
-    excerpt: "Practical strategies to improve the loading speed and performance of your web applications."
-  },
-];
 
 export default Blog;

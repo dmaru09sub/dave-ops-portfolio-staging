@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import ProjectActions from './project-actions';
-import DeploymentStageCard from './deployment-stage-card';
+import ImprovedDeploymentStageCard from './improved-deployment-stage-card';
 
 interface Project {
   id: string;
@@ -48,14 +48,16 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
         <div className="space-y-4">
           <div className="flex items-start justify-between">
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h4 className="font-medium">{project.name}</h4>
                 <Badge variant={project.active ? "default" : "secondary"}>
                   {project.active ? "Active" : "Inactive"}
                 </Badge>
                 <Badge variant="outline">{project.project_type}</Badge>
                 {project.is_source_private && (
-                  <Badge variant="secondary">Private Source</Badge>
+                  <Badge className="bg-blue-100 text-blue-800 border-blue-300">
+                    Private Source
+                  </Badge>
                 )}
               </div>
               {project.description && (
@@ -71,7 +73,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
             />
           </div>
           
-          <DeploymentStageCard project={project} />
+          <ImprovedDeploymentStageCard project={project} />
         </div>
       </CardContent>
     </Card>

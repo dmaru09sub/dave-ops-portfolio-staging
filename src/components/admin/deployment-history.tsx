@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ExternalLink, Folder, Github, Activity } from 'lucide-react';
 import { format } from 'date-fns';
-import DeploymentStatusBadge from './deployment-status-badge';
+import EnhancedDeploymentStatusBadge from './enhanced-deployment-status-badge';
 import { Badge } from '@/components/ui/badge';
 
 interface DeploymentProject {
@@ -80,13 +80,35 @@ const getActionLogsUrl = (deployment: Deployment) => {
   return sourceRepoUrl ? `${sourceRepoUrl}/actions` : null;
 };
 
+const getStageVariant = (stage: string | null) => {
+  switch (stage) {
+    case 'stage':
+      return 'secondary';
+    case 'prod':
+      return 'default';
+    default:
+      return 'outline';
+  }
+};
+
+const getStageColor = (stage: string | null) => {
+  switch (stage) {
+    case 'stage':
+      return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+    case 'prod':
+      return 'bg-green-100 text-green-800 border-green-300';
+    default:
+      return 'bg-blue-100 text-blue-800 border-blue-300';
+  }
+};
+
 const DeploymentHistory: React.FC<DeploymentHistoryProps> = ({ deployments }) => {
   return (
     <Card>
       <CardHeader>
         <CardTitle>Deployment History</CardTitle>
         <CardDescription>
-          Recent deployments across all projects and their status
+          Recent deployments across all projects with enhanced status tracking
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -111,6 +133,7 @@ const DeploymentHistory: React.FC<DeploymentHistoryProps> = ({ deployments }) =>
               {deployments.map((deployment) => {
                 const deploymentUrl = getDeploymentUrl(deployment);
                 const actionLogsUrl = getActionLogsUrl(deployment);
+                const stage = deployment.deployment_stage as 'dev' | 'stage' | 'prod' || 'prod';
                 
                 return (
                   <TableRow key={deployment.id}>
@@ -130,12 +153,19 @@ const DeploymentHistory: React.FC<DeploymentHistoryProps> = ({ deployments }) =>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={deployment.deployment_stage === 'prod' ? 'default' : 'secondary'}>
-                        {deployment.deployment_stage || 'prod'}
+                      <Badge 
+                        variant={getStageVariant(deployment.deployment_stage)}
+                        className={getStageColor(deployment.deployment_stage)}
+                      >
+                        {deployment.deployment_stage?.toUpperCase() || 'PROD'}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <DeploymentStatusBadge status={deployment.status} />
+                      <EnhancedDeploymentStatusBadge 
+                        status={deployment.status} 
+                        stage={stage}
+                        createdAt={deployment.created_at}
+                      />
                     </TableCell>
                     <TableCell>
                       {format(new Date(deployment.created_at), 'MMM d, yyyy HH:mm')}

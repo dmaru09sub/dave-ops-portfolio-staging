@@ -1,127 +1,91 @@
 
-import React from 'react';
-import { Navigate, Link, useLocation } from 'react-router-dom';
-import { useAdminAuth } from '@/hooks/use-admin-auth';
-import { Button } from '@/components/ui/button';
-import { supabase } from '@/integrations/supabase/client';
-import { 
-  LayoutDashboard, 
-  FolderOpen, 
-  BookOpen, 
-  User, 
-  Mail, 
-  LogOut,
-  Settings,
-  ExternalLink,
-  Rocket,
-  Info,
-  TestTube
-} from 'lucide-react';
+import { useAdminAuth } from "@/hooks/use-admin-auth";
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Rocket, FolderOpen, User, Mail, BookOpen, Info, TestTube, PenTool, LogOut, Settings } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
-const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
-  const { isAdmin, loading, user } = useAdminAuth();
+const AdminLayout = ({ children }: AdminLayoutProps) => {
+  const { isAuthenticated, loading, logout } = useAdminAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
-  if (!isAdmin) {
-    return <Navigate to="/admin/login" replace />;
+  if (!isAuthenticated) {
+    navigate('/admin/login');
+    return null;
   }
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
+  const handleLogout = async () => {
+    await logout();
+    navigate('/admin/login');
   };
 
-  const navItems = [
-    { to: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
-    { to: '/admin/portfolio', icon: FolderOpen, label: 'Portfolio', publicLink: '/portfolio' },
-    { to: '/admin/tutorials', icon: BookOpen, label: 'Tutorials', publicLink: '/tutorials' },
-    { to: '/admin/about', icon: User, label: 'About', publicLink: '/about' },
-    { to: '/admin/contact', icon: Mail, label: 'Contact', publicLink: '/contact' },
-    { to: '/admin/info', icon: Info, label: 'Site Info' },
-    { to: '/admin/deployments', icon: Rocket, label: 'Deployments' },
-    { to: '/admin/tests', icon: TestTube, label: 'Tests' },
+  const menuItems = [
+    { title: "Dashboard", url: "/admin", icon: Settings },
+    { title: "Deployments", url: "/admin/deployments", icon: Rocket },
+    { title: "Portfolio", url: "/admin/portfolio", icon: FolderOpen },
+    { title: "About", url: "/admin/about", icon: User },
+    { title: "Tutorials", url: "/admin/tutorials", icon: BookOpen },
+    { title: "Blog", url: "/admin/blog", icon: PenTool },
+    { title: "Contact", url: "/admin/contact", icon: Mail },
+    { title: "Site Info", url: "/admin/info", icon: Info },
+    { title: "Tests", url: "/admin/tests", icon: TestTube },
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="flex h-16 items-center px-6">
-          <div className="flex items-center space-x-4">
-            <Link to="/admin" className="flex items-center space-x-2">
-              <Settings className="h-6 w-6" />
-              <span className="font-bold">Dave-Ops Admin</span>
-            </Link>
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full">
+        <Sidebar>
+          <SidebarContent>
+            <SidebarGroup>
+              <SidebarGroupLabel>Dave-Ops Admin</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {menuItems.map((item) => (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton asChild isActive={location.pathname === item.url}>
+                        <Link to={item.url}>
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                  <SidebarMenuItem>
+                    <SidebarMenuButton onClick={handleLogout}>
+                      <LogOut className="h-4 w-4" />
+                      <span>Logout</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
+        </Sidebar>
+        
+        <main className="flex-1">
+          <div className="border-b">
+            <div className="flex h-16 items-center px-4">
+              <SidebarTrigger />
+            </div>
           </div>
-          
-          <div className="ml-auto flex items-center space-x-4">
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/" className="flex items-center gap-2">
-                <ExternalLink className="h-4 w-4" />
-                View Site
-              </Link>
-            </Button>
-            <span className="text-sm text-muted-foreground">
-              Welcome, {user?.email}
-            </span>
-            <Button variant="ghost" size="sm" onClick={handleSignOut}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
-            </Button>
+          <div className="p-6">
+            {children}
           </div>
-        </div>
-      </header>
-
-      <div className="flex">
-        <aside className="w-64 min-h-[calc(100vh-4rem)] border-r bg-background/50">
-          <nav className="p-4">
-            <ul className="space-y-2">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = location.pathname === item.to;
-                
-                return (
-                  <li key={item.to}>
-                    <div className="flex items-center gap-1">
-                      <Link
-                        to={item.to}
-                        className={`flex-1 flex items-center space-x-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground ${
-                          isActive ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'
-                        }`}
-                      >
-                        <Icon className="h-4 w-4" />
-                        <span>{item.label}</span>
-                      </Link>
-                      {item.publicLink && (
-                        <Button variant="ghost" size="sm" asChild className="p-1 h-8 w-8">
-                          <Link to={item.publicLink} target="_blank" rel="noopener noreferrer">
-                            <ExternalLink className="h-3 w-3" />
-                          </Link>
-                        </Button>
-                      )}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </nav>
-        </aside>
-
-        <main className="flex-1 p-6">
-          {children}
         </main>
       </div>
-    </div>
+    </SidebarProvider>
   );
 };
 

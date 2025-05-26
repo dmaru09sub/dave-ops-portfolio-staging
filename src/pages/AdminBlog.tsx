@@ -3,25 +3,26 @@ import React from 'react';
 import AdminLayout from '@/components/admin/admin-layout';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import { useTutorialManagement } from '@/hooks/use-tutorial-management';
-import TutorialForm from '@/components/admin/tutorials/tutorial-form';
-import TutorialTable from '@/components/admin/tutorials/tutorial-table';
+import { useBlogManagement } from '@/hooks/use-blog-management';
+import BlogForm from '@/components/admin/blog/blog-form';
+import BlogTable from '@/components/admin/blog/blog-table';
 
-const AdminTutorials = () => {
+const AdminBlog = () => {
   const {
-    tutorials,
+    blogPosts,
     loading,
     formData,
     setFormData,
     isCreating,
-    editingTutorial,
+    editingPost,
     handleSubmit,
     handleEdit,
     handleDelete,
     togglePublished,
+    toggleFeatured,
     resetForm,
     startCreating
-  } = useTutorialManagement();
+  } = useBlogManagement();
 
   if (loading) {
     return (
@@ -37,32 +38,33 @@ const AdminTutorials = () => {
     <AdminLayout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Tutorials Management</h1>
+          <h1 className="text-3xl font-bold">Blog Management</h1>
           <Button onClick={startCreating}>
             <Plus className="h-4 w-4 mr-2" />
-            Add Tutorial
+            Add Blog Post
           </Button>
         </div>
 
         {isCreating && (
-          <TutorialForm
+          <BlogForm
             formData={formData}
             setFormData={setFormData}
             onSubmit={handleSubmit}
             onCancel={resetForm}
-            isEditing={!!editingTutorial}
+            isEditing={!!editingPost}
           />
         )}
 
-        <TutorialTable
-          tutorials={tutorials}
+        <BlogTable
+          blogPosts={blogPosts}
           onEdit={handleEdit}
           onDelete={handleDelete}
           onTogglePublished={togglePublished}
+          onToggleFeatured={toggleFeatured}
         />
       </div>
     </AdminLayout>
   );
 };
 
-export default AdminTutorials;
+export default AdminBlog;
