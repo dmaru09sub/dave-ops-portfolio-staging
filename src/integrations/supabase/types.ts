@@ -225,6 +225,51 @@ export type Database = {
         }
         Relationships: []
       }
+      daveops_blog_posts: {
+        Row: {
+          content: string
+          created_at: string | null
+          excerpt: string | null
+          featured: boolean | null
+          featured_image: string | null
+          id: string
+          published: boolean | null
+          read_time: number | null
+          slug: string
+          tags: Json | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          excerpt?: string | null
+          featured?: boolean | null
+          featured_image?: string | null
+          id?: string
+          published?: boolean | null
+          read_time?: number | null
+          slug: string
+          tags?: Json | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          excerpt?: string | null
+          featured?: boolean | null
+          featured_image?: string | null
+          id?: string
+          published?: boolean | null
+          read_time?: number | null
+          slug?: string
+          tags?: Json | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       daveops_changelog_affected_files: {
         Row: {
           change_type: string
@@ -539,6 +584,54 @@ export type Database = {
         }
         Relationships: []
       }
+      daveops_knowledge_base_articles: {
+        Row: {
+          category: string
+          content: string | null
+          created_at: string
+          difficulty_level: string | null
+          estimated_read_time: number | null
+          featured: boolean
+          id: string
+          published: boolean
+          slug: string
+          sort_order: number
+          tags: Json | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          content?: string | null
+          created_at?: string
+          difficulty_level?: string | null
+          estimated_read_time?: number | null
+          featured?: boolean
+          id?: string
+          published?: boolean
+          slug: string
+          sort_order?: number
+          tags?: Json | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          content?: string | null
+          created_at?: string
+          difficulty_level?: string | null
+          estimated_read_time?: number | null
+          featured?: boolean
+          id?: string
+          published?: boolean
+          slug?: string
+          sort_order?: number
+          tags?: Json | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       daveops_page_views: {
         Row: {
           created_at: string | null
@@ -688,6 +781,103 @@ export type Database = {
         }
         Relationships: []
       }
+      daveops_project_health_checks: {
+        Row: {
+          check_type: string
+          created_at: string
+          details: Json | null
+          id: string
+          last_checked_at: string
+          message: string | null
+          project_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          check_type: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          last_checked_at?: string
+          message?: string | null
+          project_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          check_type?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          last_checked_at?: string
+          message?: string | null
+          project_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daveops_project_health_checks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "daveops_deployment_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      daveops_project_initialization_status: {
+        Row: {
+          configuration_complete: boolean
+          created_at: string
+          github_pages_enabled: boolean
+          id: string
+          initial_deployment_successful: boolean
+          last_validation_at: string | null
+          project_id: string
+          repository_structure_valid: boolean
+          secrets_configured: boolean
+          updated_at: string
+          validation_errors: Json | null
+          workflow_files_created: boolean
+        }
+        Insert: {
+          configuration_complete?: boolean
+          created_at?: string
+          github_pages_enabled?: boolean
+          id?: string
+          initial_deployment_successful?: boolean
+          last_validation_at?: string | null
+          project_id: string
+          repository_structure_valid?: boolean
+          secrets_configured?: boolean
+          updated_at?: string
+          validation_errors?: Json | null
+          workflow_files_created?: boolean
+        }
+        Update: {
+          configuration_complete?: boolean
+          created_at?: string
+          github_pages_enabled?: boolean
+          id?: string
+          initial_deployment_successful?: boolean
+          last_validation_at?: string | null
+          project_id?: string
+          repository_structure_valid?: boolean
+          secrets_configured?: boolean
+          updated_at?: string
+          validation_errors?: Json | null
+          workflow_files_created?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daveops_project_initialization_status_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "daveops_deployment_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daveops_projects: {
         Row: {
           category: string | null
@@ -772,14 +962,103 @@ export type Database = {
         }
         Relationships: []
       }
+      daveops_tutorial_series: {
+        Row: {
+          created_at: string
+          description: string | null
+          difficulty_level: string | null
+          estimated_duration: number | null
+          id: string
+          prerequisites: Json
+          published: boolean
+          sort_order: number
+          title: string
+          tutorials: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          difficulty_level?: string | null
+          estimated_duration?: number | null
+          id?: string
+          prerequisites?: Json
+          published?: boolean
+          sort_order?: number
+          title: string
+          tutorials?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          difficulty_level?: string | null
+          estimated_duration?: number | null
+          id?: string
+          prerequisites?: Json
+          published?: boolean
+          sort_order?: number
+          title?: string
+          tutorials?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      daveops_tutorial_user_progress: {
+        Row: {
+          completed: boolean
+          completed_at: string | null
+          current_step: number
+          id: string
+          metadata: Json | null
+          progress_percentage: number
+          started_at: string
+          total_steps: number
+          tutorial_id: string | null
+          tutorial_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          completed_at?: string | null
+          current_step?: number
+          id?: string
+          metadata?: Json | null
+          progress_percentage?: number
+          started_at?: string
+          total_steps?: number
+          tutorial_id?: string | null
+          tutorial_type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          completed_at?: string | null
+          current_step?: number
+          id?: string
+          metadata?: Json | null
+          progress_percentage?: number
+          started_at?: string
+          total_steps?: number
+          tutorial_id?: string | null
+          tutorial_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       daveops_tutorials: {
         Row: {
+          category: string | null
           coming_soon: boolean | null
           content: string | null
           created_at: string | null
           description: string | null
           difficulty_level: string | null
           estimated_duration: number | null
+          featured: boolean | null
           id: string
           image_url: string | null
           published: boolean | null
@@ -787,14 +1066,17 @@ export type Database = {
           tags: Json | null
           title: string
           updated_at: string | null
+          youtube_url: string | null
         }
         Insert: {
+          category?: string | null
           coming_soon?: boolean | null
           content?: string | null
           created_at?: string | null
           description?: string | null
           difficulty_level?: string | null
           estimated_duration?: number | null
+          featured?: boolean | null
           id?: string
           image_url?: string | null
           published?: boolean | null
@@ -802,14 +1084,17 @@ export type Database = {
           tags?: Json | null
           title: string
           updated_at?: string | null
+          youtube_url?: string | null
         }
         Update: {
+          category?: string | null
           coming_soon?: boolean | null
           content?: string | null
           created_at?: string | null
           description?: string | null
           difficulty_level?: string | null
           estimated_duration?: number | null
+          featured?: boolean | null
           id?: string
           image_url?: string | null
           published?: boolean | null
@@ -817,6 +1102,7 @@ export type Database = {
           tags?: Json | null
           title?: string
           updated_at?: string | null
+          youtube_url?: string | null
         }
         Relationships: []
       }

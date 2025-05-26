@@ -1,7 +1,8 @@
 
 import { useAdminAuth } from "@/hooks/use-admin-auth";
+import { useDomainContext } from "@/hooks/use-domain-context";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { Rocket, FolderOpen, User, Mail, BookOpen, Info, TestTube, PenTool, LogOut, Settings } from "lucide-react";
+import { Rocket, FolderOpen, User, Mail, BookOpen, Info, TestTube, PenTool, LogOut, Settings, ExternalLink } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 interface AdminLayoutProps {
@@ -10,6 +11,7 @@ interface AdminLayoutProps {
 
 const AdminLayout = ({ children }: AdminLayoutProps) => {
   const { isAuthenticated, loading, logout } = useAdminAuth();
+  const { liveSiteUrl } = useDomainContext();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -32,15 +34,15 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   };
 
   const menuItems = [
-    { title: "Dashboard", url: "/admin", icon: Settings },
-    { title: "Deployments", url: "/admin/deployments", icon: Rocket },
-    { title: "Portfolio", url: "/admin/portfolio", icon: FolderOpen },
-    { title: "About", url: "/admin/about", icon: User },
-    { title: "Tutorials", url: "/admin/tutorials", icon: BookOpen },
-    { title: "Blog", url: "/admin/blog", icon: PenTool },
-    { title: "Contact", url: "/admin/contact", icon: Mail },
-    { title: "Site Info", url: "/admin/info", icon: Info },
-    { title: "Tests", url: "/admin/tests", icon: TestTube },
+    { title: "Dashboard", url: "/admin", icon: Settings, publicPath: "/" },
+    { title: "Deployments", url: "/admin/deployments", icon: Rocket, publicPath: "/" },
+    { title: "Portfolio", url: "/admin/portfolio", icon: FolderOpen, publicPath: "/portfolio" },
+    { title: "About", url: "/admin/about", icon: User, publicPath: "/about" },
+    { title: "Tutorials", url: "/admin/tutorials", icon: BookOpen, publicPath: "/tutorials" },
+    { title: "Blog", url: "/admin/blog", icon: PenTool, publicPath: "/blog" },
+    { title: "Contact", url: "/admin/contact", icon: Mail, publicPath: "/contact" },
+    { title: "Site Info", url: "/admin/info", icon: Info, publicPath: "/" },
+    { title: "Tests", url: "/admin/tests", icon: TestTube, publicPath: "/" },
   ];
 
   return (
@@ -54,14 +56,35 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
                 <SidebarMenu>
                   {menuItems.map((item) => (
                     <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild isActive={location.pathname === item.url}>
-                        <Link to={item.url}>
-                          <item.icon className="h-4 w-4" />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
+                      <div className="flex items-center w-full">
+                        <SidebarMenuButton asChild isActive={location.pathname === item.url} className="flex-1">
+                          <Link to={item.url}>
+                            <item.icon className="h-4 w-4" />
+                            <span>{item.title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                        {item.publicPath && (
+                          <a 
+                            href={`${liveSiteUrl}${item.publicPath}`}
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="p-1 hover:bg-sidebar-accent rounded ml-1"
+                            title={`View ${item.title} on live site`}
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        )}
+                      </div>
                     </SidebarMenuItem>
                   ))}
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild>
+                      <a href={liveSiteUrl} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="h-4 w-4" />
+                        <span>View Live Site</span>
+                      </a>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
                   <SidebarMenuItem>
                     <SidebarMenuButton onClick={handleLogout}>
                       <LogOut className="h-4 w-4" />

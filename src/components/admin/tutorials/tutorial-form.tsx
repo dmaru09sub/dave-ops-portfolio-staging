@@ -4,19 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-
-interface TutorialFormData {
-  title: string;
-  description: string;
-  content: string;
-  difficulty_level: string;
-  estimated_duration: number;
-  tags: string;
-  image_url: string;
-  published: boolean;
-  coming_soon: boolean;
-  sort_order: number;
-}
+import type { TutorialFormData } from '@/types/tutorial';
 
 interface TutorialFormProps {
   formData: TutorialFormData;
@@ -50,6 +38,17 @@ const TutorialForm: React.FC<TutorialFormProps> = ({
               />
             </div>
             <div>
+              <label className="text-sm font-medium">Category</label>
+              <Input
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                placeholder="DevOps, React, etc."
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
               <label className="text-sm font-medium">Difficulty Level</label>
               <select
                 value={formData.difficulty_level}
@@ -61,6 +60,14 @@ const TutorialForm: React.FC<TutorialFormProps> = ({
                 <option value="advanced">Advanced</option>
               </select>
             </div>
+            <div>
+              <label className="text-sm font-medium">YouTube URL (optional)</label>
+              <Input
+                value={formData.youtube_url}
+                onChange={(e) => setFormData({ ...formData, youtube_url: e.target.value })}
+                placeholder="https://youtube.com/watch?v=..."
+              />
+            </div>
           </div>
 
           <div>
@@ -69,6 +76,7 @@ const TutorialForm: React.FC<TutorialFormProps> = ({
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
+              placeholder="Brief description of the tutorial..."
             />
           </div>
 
@@ -78,7 +86,7 @@ const TutorialForm: React.FC<TutorialFormProps> = ({
               value={formData.content}
               onChange={(e) => setFormData({ ...formData, content: e.target.value })}
               rows={10}
-              placeholder="Write your tutorial content here..."
+              placeholder="Full tutorial content or summary if linking to YouTube..."
             />
           </div>
 
@@ -104,6 +112,7 @@ const TutorialForm: React.FC<TutorialFormProps> = ({
               <Input
                 value={formData.image_url}
                 onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                placeholder="https://..."
               />
             </div>
           </div>
@@ -125,6 +134,14 @@ const TutorialForm: React.FC<TutorialFormProps> = ({
                 onChange={(e) => setFormData({ ...formData, published: e.target.checked })}
               />
               <span className="text-sm">Published</span>
+            </label>
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={formData.featured}
+                onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
+              />
+              <span className="text-sm">Featured</span>
             </label>
             <label className="flex items-center space-x-2">
               <input

@@ -107,20 +107,18 @@ export const useDaveOpsData = () => {
       if (tutorialsError) throw tutorialsError;
       setTutorials(tutorialsData as Tutorial[] || []);
 
-      // Fetch blog posts
+      // Fetch blog posts with type assertion
       try {
-        const { data: blogData, error: blogError } = await supabase
-          .from('daveops_blog_posts' as any)
+        const { data: blogData, error: blogError } = await (supabase as any)
+          .from('daveops_blog_posts')
           .select('*')
           .order('created_at', { ascending: false });
 
         if (blogError) {
-          console.warn('Blog posts table not found, will be created when needed');
+          console.warn('Blog posts error:', blogError);
           setBlogPosts([]);
-        } else if (Array.isArray(blogData)) {
-          setBlogPosts(blogData as BlogPost[]);
         } else {
-          setBlogPosts([]);
+          setBlogPosts(blogData || []);
         }
       } catch (blogErr) {
         console.warn('Blog posts not available yet');

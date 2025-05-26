@@ -1,6 +1,7 @@
 
 import React from 'react';
 import AdminLayout from '@/components/admin/admin-layout';
+import ViewLiveSiteButton from '@/components/admin/view-live-site-button';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { useTutorialManagement } from '@/hooks/use-tutorial-management';
@@ -37,11 +38,19 @@ const AdminTutorials = () => {
     <AdminLayout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Tutorials Management</h1>
-          <Button onClick={startCreating}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Tutorial
-          </Button>
+          <div>
+            <h1 className="text-3xl font-bold">Tutorials Management</h1>
+            <p className="text-muted-foreground">
+              Manage tutorials including CI/CD pipeline guides and DevOps content
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <ViewLiveSiteButton />
+            <Button onClick={startCreating}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Tutorial
+            </Button>
+          </div>
         </div>
 
         {isCreating && (

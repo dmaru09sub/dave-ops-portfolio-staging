@@ -1,8 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/admin/admin-layout';
 import PageAnalytics from '@/components/admin/page-analytics';
 import ChangelogSection from '@/components/admin/changelog-section';
+import ViewLiveSiteButton from '@/components/admin/view-live-site-button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { FolderOpen, BookOpen, User, Mail, Eye, MessageSquare } from 'lucide-react';
@@ -77,11 +77,14 @@ const AdminDashboard = () => {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Welcome to your Dave-Ops.Net admin panel
-          </p>
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+            <p className="text-muted-foreground">
+              Welcome to your Dave-Ops.Net admin panel
+            </p>
+          </div>
+          <ViewLiveSiteButton />
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

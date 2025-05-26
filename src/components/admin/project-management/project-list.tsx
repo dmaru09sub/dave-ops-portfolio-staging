@@ -1,8 +1,7 @@
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import ProjectListItem from './project-list-item';
 import ProjectForm from '../project-form';
-import ProjectCard from '../project-card';
 import type { Project } from './types';
 
 interface ProjectListProps {
@@ -30,39 +29,44 @@ const ProjectList: React.FC<ProjectListProps> = ({
   onCancel,
   onRefetch
 }) => {
+  const handleDelete = async (id: string) => {
+    // For now, just refresh the list
+    // In a full implementation, this would delete the project
+    console.log('Delete project:', id);
+    await onRefetch();
+  };
+
+  if (projects.length === 0 && !newProject) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        <p>No projects configured yet.</p>
+        <p className="text-sm mt-2">Add your first project to get started with the CI/CD pipeline.</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {projects.map((project) => (
         <div key={project.id}>
           {editingProject === project.id ? (
-            <Card>
-              <CardContent className="p-6">
-                <ProjectForm
-                  formData={formData}
-                  setFormData={setFormData}
-                  onSave={onSave}
-                  onCancel={onCancel}
-                  saving={saving}
-                />
-              </CardContent>
-            </Card>
+            <ProjectForm
+              formData={formData}
+              setFormData={setFormData}
+              onSave={onSave}
+              onCancel={onCancel}
+              saving={saving}
+              isNew={false}
+            />
           ) : (
-            <ProjectCard
+            <ProjectListItem
               project={project}
               onEdit={onEdit}
-              onRefetch={onRefetch}
-              editingProject={editingProject}
-              newProject={newProject}
+              onDelete={handleDelete}
             />
           )}
         </div>
       ))}
-
-      {projects.length === 0 && !newProject && (
-        <div className="text-center py-8 text-muted-foreground">
-          No projects configured yet. Add your first 3-stage project to get started.
-        </div>
-      )}
     </div>
   );
 };

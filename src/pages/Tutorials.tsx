@@ -1,10 +1,11 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SiteHeader } from "@/components/site-header";
 import MainLayout from "@/components/layouts/main-layout";
-import { Clock, ExternalLink, GitBranch } from "lucide-react";
+import { Clock, ExternalLink, GitBranch, Play } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
 import type { Json } from '@/integrations/supabase/types';
@@ -23,6 +24,9 @@ interface Tutorial {
   sort_order: number;
   created_at: string;
   updated_at: string;
+  youtube_url?: string;
+  category?: string;
+  featured?: boolean;
 }
 
 const Tutorials = () => {
@@ -66,6 +70,92 @@ const Tutorials = () => {
     return [];
   };
 
+  const renderTutorialCard = (tutorial: Tutorial) => {
+    const isYouTube = tutorial.youtube_url && tutorial.youtube_url.trim() !== '';
+    const isCI_CD = tutorial.title.toLowerCase().includes('ci/cd') || tutorial.title.toLowerCase().includes('pipeline');
+    
+    return (
+      <Card key={tutorial.id} className={tutorial.featured ? "border-2 border-primary/20 bg-primary/5" : ""}>
+        <CardHeader>
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              {isCI_CD && <GitBranch className="h-6 w-6 text-primary" />}
+              <div>
+                <CardTitle className="text-xl">{tutorial.title}</CardTitle>
+                <CardDescription className="text-base">
+                  {tutorial.description}
+                </CardDescription>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              {tutorial.featured && <Badge className="bg-blue-100 text-blue-800">Featured</Badge>}
+              {tutorial.coming_soon && <Badge variant="outline">Coming Soon</Badge>}
+              {isYouTube && <Badge variant="outline" className="bg-red-50 text-red-700">YouTube</Badge>}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {tutorial.content && (
+              <p className="text-muted-foreground line-clamp-3">
+                {tutorial.content.substring(0, 200)}...
+              </p>
+            )}
+            
+            {tutorial.tags && getTagsArray(tutorial.tags).length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {getTagsArray(tutorial.tags).map((tag, index) => (
+                  <Badge key={index} variant="outline">{tag}</Badge>
+                ))}
+              </div>
+            )}
+            
+            <div className="flex items-center justify-between pt-4">
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                {tutorial.estimated_duration && (
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-4 w-4" />
+                    {tutorial.estimated_duration} min
+                  </div>
+                )}
+                {tutorial.difficulty_level && (
+                  <Badge className={getDifficultyColor(tutorial.difficulty_level)}>
+                    {tutorial.difficulty_level}
+                  </Badge>
+                )}
+              </div>
+              
+              {tutorial.coming_soon ? (
+                <Button variant="outline" disabled>
+                  Coming Soon
+                </Button>
+              ) : isYouTube ? (
+                <Button asChild>
+                  <a href={tutorial.youtube_url} target="_blank" rel="noopener noreferrer">
+                    <Play className="h-4 w-4 mr-2" />
+                    Watch Tutorial
+                  </a>
+                </Button>
+              ) : isCI_CD ? (
+                <Link to="/tutorials/cicd-pipeline">
+                  <Button>
+                    Read Tutorial
+                    <ExternalLink className="h-4 w-4 ml-2" />
+                  </Button>
+                </Link>
+              ) : (
+                <Button variant="outline">
+                  Read Tutorial
+                  <ExternalLink className="h-4 w-4 ml-2" />
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
   if (loading) {
     return (
       <MainLayout>
@@ -103,61 +193,8 @@ const Tutorials = () => {
           </div>
 
           <div className="space-y-6">
-            {}
             {tutorials.length > 0 ? (
-              tutorials.map((tutorial) => (
-                <Card key={tutorial.id}>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle>{tutorial.title}</CardTitle>
-                        <CardDescription>{tutorial.description}</CardDescription>
-                      </div>
-                      {tutorial.coming_soon && (
-                        <Badge variant="outline">Coming Soon</Badge>
-                      )}
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {tutorial.content && (
-                        <p className="text-muted-foreground line-clamp-3">
-                          {tutorial.content.substring(0, 200)}...
-                        </p>
-                      )}
-                      
-                      {tutorial.tags && getTagsArray(tutorial.tags).length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {getTagsArray(tutorial.tags).map((tag, index) => (
-                            <Badge key={index} variant="outline">{tag}</Badge>
-                          ))}
-                        </div>
-                      )}
-                      
-                      <div className="flex items-center justify-between pt-4">
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          {tutorial.estimated_duration && (
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-4 w-4" />
-                              {tutorial.estimated_duration} min read
-                            </div>
-                          )}
-                          {tutorial.difficulty_level && (
-                            <Badge className={getDifficultyColor(tutorial.difficulty_level)}>
-                              {tutorial.difficulty_level}
-                            </Badge>
-                          )}
-                        </div>
-                        
-                        <Button variant="outline" disabled={tutorial.coming_soon}>
-                          {tutorial.coming_soon ? 'Coming Soon' : 'Read Tutorial'}
-                          {!tutorial.coming_soon && <ExternalLink className="h-4 w-4 ml-2" />}
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
+              tutorials.map(renderTutorialCard)
             ) : (
               <Card>
                 <CardContent className="p-8 text-center">

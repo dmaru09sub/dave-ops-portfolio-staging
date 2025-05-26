@@ -4,22 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Edit, Trash, Eye, EyeOff } from 'lucide-react';
-import type { Json } from '@/integrations/supabase/types';
-
-interface Tutorial {
-  id: string;
-  title: string;
-  description: string;
-  content: string;
-  difficulty_level: string;
-  estimated_duration: number;
-  tags: Json;
-  image_url: string;
-  published: boolean;
-  coming_soon: boolean;
-  sort_order: number;
-  created_at: string;
-}
+import type { Tutorial } from '@/types/tutorial';
 
 interface TutorialTableProps {
   tutorials: Tutorial[];

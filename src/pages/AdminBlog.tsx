@@ -1,6 +1,7 @@
 
 import React from 'react';
 import AdminLayout from '@/components/admin/admin-layout';
+import ViewLiveSiteButton from '@/components/admin/view-live-site-button';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { useBlogManagement } from '@/hooks/use-blog-management';
@@ -38,11 +39,19 @@ const AdminBlog = () => {
     <AdminLayout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Blog Management</h1>
-          <Button onClick={startCreating}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Blog Post
-          </Button>
+          <div>
+            <h1 className="text-3xl font-bold">Blog Management</h1>
+            <p className="text-muted-foreground mt-1">
+              Create and manage blog posts for your portfolio
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <ViewLiveSiteButton />
+            <Button onClick={startCreating} className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Add Blog Post
+            </Button>
+          </div>
         </div>
 
         {isCreating && (
@@ -62,6 +71,14 @@ const AdminBlog = () => {
           onTogglePublished={togglePublished}
           onToggleFeatured={toggleFeatured}
         />
+
+        {!loading && blogPosts.length === 0 && !isCreating && (
+          <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No blog posts yet</h3>
+            <p className="text-gray-500 mb-4">Get started by creating your first blog post</p>
+            <Button onClick={startCreating}>Create Blog Post</Button>
+          </div>
+        )}
       </div>
     </AdminLayout>
   );
