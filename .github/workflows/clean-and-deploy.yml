@@ -15,6 +15,9 @@ jobs:
       with:
         fetch-depth: 0
         
+    - name: Make scripts executable
+      run: chmod +x .github/scripts/*.sh
+        
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
@@ -35,203 +38,27 @@ jobs:
         git config --global user.name 'Stage Deploy Bot'
         git config --global user.email 'stage-deploy@dave-ops.net'
         
-    - name: Deploy cleaned source to stage repository
+    - name: Prepare cleaned source
+      run: .github/scripts/prepare-cleaned-source.sh
+      
+    - name: Validate production workflow
+      run: .github/scripts/validate-workflow.sh
+      
+    - name: Deploy to stage repository
       env:
         PORTFOLIO_TOKEN: ${{ secrets.PORTFOLIO_TOKEN }}
         TARGET_REPO: ${{ github.event.client_payload.target_repo }}
         PROJECT_NAME: ${{ github.event.client_payload.project_name }}
-        DEPLOYMENT_ID: ${{ github.event.client_payload.deployment_id }}
-      run: |
-        echo "=== Starting deployment process ==="
-        echo "Source repo: ${{ github.repository }}"
-        echo "Target repo: ${TARGET_REPO}"
-        echo "Project: ${PROJECT_NAME}"
-        echo "Current working directory: $(pwd)"
-        
-        # Create a temporary directory for the cleaned source
-        TEMP_DIR="$(pwd)/cleaned-source"
-        mkdir -p "$TEMP_DIR"
-        echo "✓ Created temp directory: $TEMP_DIR"
-        
-        # Copy all files except .git, node_modules, and cleaned-source to temp directory
-        rsync -av \
-          --exclude='.git' \
-          --exclude='node_modules' \
-          --exclude='dist' \
-          --exclude='.next' \
-          --exclude='*.log' \
-          --exclude='cleaned-source' \
-          ./ "$TEMP_DIR/"
-        echo "✓ Copied source files to temp directory"
-        
-        # Verify the production workflow exists in source
-        if [ -f ".github/workflows/build-and-deploy.yml" ]; then
-          echo "✓ Production workflow file exists in source repository"
-          # Validate the workflow file is complete
-          if grep -q "Deploy to GitHub Pages" .github/workflows/build-and-deploy.yml; then
-            echo "✓ Production workflow file appears complete"
-          else
-            echo "❌ Production workflow file appears incomplete"
-            exit 1
-          fi
-        else
-          echo "❌ Production workflow file missing in source repository"
-          exit 1
-        fi
-        
-        # Copy the production workflow to the cleaned source (it's already there from rsync)
-        echo "✓ Production workflow already copied with source files"
-        
-        # Verify what was copied
-        echo "=== Files in temp directory ==="
-        find "$TEMP_DIR" -type f | wc -l
-        echo "File count: $(find "$TEMP_DIR" -type f | wc -l)"
-        ls -la "$TEMP_DIR/" | head -20
-        
-        # Verify the production workflow exists in temp directory
-        if [ -f "$TEMP_DIR/.github/workflows/build-and-deploy.yml" ]; then
-          echo "✓ Production workflow file exists in temp directory"
-          # Check file size to ensure it's not truncated
-          WORKFLOW_SIZE=$(wc -c < "$TEMP_DIR/.github/workflows/build-and-deploy.yml")
-          echo "✓ Production workflow file size: $WORKFLOW_SIZE bytes"
-          if [ "$WORKFLOW_SIZE" -lt 1000 ]; then
-            echo "❌ Production workflow file appears too small (less than 1000 bytes)"
-            echo "Content preview:"
-            head -20 "$TEMP_DIR/.github/workflows/build-and-deploy.yml"
-            exit 1
-          fi
-        else
-          echo "❌ Production workflow file missing in temp directory"
-          exit 1
-        fi
-        
-        # Clone or initialize the stage repository using token authentication
-        STAGE_DIR="$(pwd)/stage-repo"
-        if git clone https://x-access-token:${PORTFOLIO_TOKEN}@github.com/${TARGET_REPO}.git "$STAGE_DIR" 2>/dev/null; then
-          echo "✓ Cloned existing stage repository to: $STAGE_DIR"
-          cd "$STAGE_DIR"
-          
-          # Show current state
-          echo "=== Current stage repo contents ==="
-          ls -la
-          
-          # Remove all content except .git
-          find . -maxdepth 1 ! -name '.git' ! -name '.' ! -name '..' -exec rm -rf {} + 2>/dev/null || true
-          echo "✓ Cleaned existing stage repository"
-          
-        else
-          echo "✓ Creating new stage repository at: $STAGE_DIR"
-          mkdir -p "$STAGE_DIR"
-          cd "$STAGE_DIR"
-          git init
-          git remote add origin https://x-access-token:${PORTFOLIO_TOKEN}@github.com/${TARGET_REPO}.git
-          git checkout -b main
-        fi
-        
-        # Copy cleaned source to stage repository using tar
-        echo "=== Copying cleaned source to stage repo ==="
-        echo "Current directory: $(pwd)"
-        echo "Temp directory: $TEMP_DIR"
-        
-        (cd "$TEMP_DIR" && tar -cf - .) | tar -xf -
-        
-        # Verify files were copied
-        echo "=== Stage repo contents after copy ==="
-        find . -type f ! -path './.git/*' | wc -l
-        echo "File count after copy: $(find . -type f ! -path './.git/*' | wc -l)"
-        ls -la | head -20
-        
-        # Verify the production workflow exists in the stage repo and validate it
-        if [ -f ".github/workflows/build-and-deploy.yml" ]; then
-          echo "✓ Production workflow file exists in stage repo"
-          STAGE_WORKFLOW_SIZE=$(wc -c < ".github/workflows/build-and-deploy.yml")
-          echo "✓ Production workflow file size in stage repo: $STAGE_WORKFLOW_SIZE bytes"
-          
-          # Validate the workflow file content
-          if grep -q "Deploy to GitHub Pages" .github/workflows/build-and-deploy.yml && \
-             grep -q "WORKFLOW_EOF" .github/workflows/build-and-deploy.yml; then
-            echo "✓ Production workflow file appears complete in stage repo"
-          else
-            echo "❌ Production workflow file appears incomplete in stage repo"
-            echo "Content preview:"
-            head -20 .github/workflows/build-and-deploy.yml
-            exit 1
-          fi
-        else
-          echo "❌ Production workflow file missing in stage repo"
-          exit 1
-        fi
-        
-        # Force add all files including hidden ones
-        git add -A
-        echo "✓ Added all files to git staging"
-        
-        # Show what's staged
-        echo "=== Git status after staging ==="
-        git status --porcelain | wc -l
-        echo "Staged changes count: $(git status --porcelain | wc -l)"
-        
-        # Check if there are changes to commit
-        if git diff --staged --quiet; then
-          echo "❌ No changes detected in staging area"
-          
-          # Create a timestamp file to force changes
-          echo "Deployment timestamp: $(date)" > .deployment-timestamp
-          git add .deployment-timestamp
-          echo "✓ Added timestamp file"
-          
-          if git diff --staged --quiet; then
-            echo "❌ Still no changes detected - this indicates a critical problem"
-            exit 1
-          fi
-        fi
-        
-        # Commit the changes
-        git commit -m "Deploy cleaned source with production workflow - ${PROJECT_NAME} - $(date)"
-        echo "✓ Committed changes"
-        
-        # Get current branch name
-        CURRENT_BRANCH=$(git branch --show-current)
-        echo "Current branch: ${CURRENT_BRANCH}"
-        
-        # Push to stage repository
-        if git push -u origin ${CURRENT_BRANCH} 2>&1; then
-          echo "✓ Pushed to ${CURRENT_BRANCH} branch"
-        else
-          echo "❌ Failed to push to remote repository"
-          echo "Attempting to set upstream and push again..."
-          git push --set-upstream origin ${CURRENT_BRANCH} 2>&1 || {
-            echo "❌ Still failed to push"
-            echo "Git log:"
-            git log --oneline -5
-            echo "Git remote:"
-            git remote -v
-            exit 1
-          }
-        fi
-        
-        echo "=== Stage deployment completed successfully ==="
+      run: .github/scripts/deploy-to-stage.sh
         
     - name: Update deployment status - Success
       if: success()
-      run: |
-        curl -X POST 'https://nlzwrlgtjshcjfxfchyz.supabase.co/functions/v1/update-deployment-status' \
-          -H 'Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}' \
-          -H 'Content-Type: application/json' \
-          -d '{
-            "deployment_id": "${{ github.event.client_payload.deployment_id }}",
-            "status": "stage_deployed",
-            "stage_commit_hash": "${{ github.sha }}"
-          }'
+      env:
+        SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      run: .github/scripts/update-status.sh success "${{ github.event.client_payload.deployment_id }}" "${{ github.sha }}"
           
     - name: Update deployment status - Failure
       if: failure()
-      run: |
-        curl -X POST 'https://nlzwrlgtjshcjfxfchyz.supabase.co/functions/v1/update-deployment-status' \
-          -H 'Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}' \
-          -H 'Content-Type: application/json' \
-          -d '{
-            "deployment_id": "${{ github.event.client_payload.deployment_id }}",
-            "status": "failed",
-            "error_message": "Stage deployment failed - check workflow logs"
-          }'
+      env:
+        SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      run: .github/scripts/update-status.sh failure "${{ github.event.client_payload.deployment_id }}"

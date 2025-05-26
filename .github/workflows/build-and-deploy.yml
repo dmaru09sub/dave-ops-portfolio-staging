@@ -1,0 +1,176 @@
+
+name: Build and Deploy to Production
+
+on:
+  repository_dispatch:
+    types: [deploy-to-prod]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout stage repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies and build
+      env:
+        BUILD_COMMAND: ${{ github.event.client_payload.build_command }}
+      run: |
+        echo "=== Starting build process ==="
+        npm cache clean --force
+        rm -f package-lock.json
+        npm install
+        
+        if [ -n "$BUILD_COMMAND" ]; then
+          echo "Running custom build command: $BUILD_COMMAND"
+          $BUILD_COMMAND
+        else
+          echo "Running default build command: npm run build"
+          npm run build
+        fi
+        
+        if [ ! -d "dist" ] && [ ! -d "build" ]; then
+          echo "❌ Error: No build output found"
+          exit 1
+        fi
+        
+        echo "✓ Build completed successfully"
+        
+    - name: Configure Git
+      run: |
+        git config --global user.name 'Production Deploy Bot'
+        git config --global user.email 'prod-deploy@dave-ops.net'
+        
+    - name: Deploy built files to production repository
+      env:
+        PORTFOLIO_TOKEN: ${{ secrets.PORTFOLIO_TOKEN }}
+        TARGET_REPO: ${{ github.event.client_payload.target_repo }}
+        PROJECT_NAME: ${{ github.event.client_payload.project_name }}
+      run: |
+        echo "=== Starting production deployment ==="
+        
+        BUILD_DIR="dist"
+        if [ ! -d "dist" ]; then
+          BUILD_DIR="build"
+        fi
+        
+        echo "✓ Using build directory: $BUILD_DIR"
+        
+        if git clone https://x-access-token:${PORTFOLIO_TOKEN}@github.com/${TARGET_REPO}.git prod-repo 2>/dev/null; then
+          echo "✓ Cloned existing production repository"
+          cd prod-repo
+          find . -maxdepth 1 ! -name '.git' ! -name '.github' ! -name '.' ! -name '..' -exec rm -rf {} + 2>/dev/null || true
+          echo "✓ Cleaned existing production repository"
+        else
+          echo "✓ Creating new production repository"
+          mkdir prod-repo
+          cd prod-repo
+          git init
+          git remote add origin https://x-access-token:${PORTFOLIO_TOKEN}@github.com/${TARGET_REPO}.git
+          git checkout -b main
+        fi
+        
+        cd ../$BUILD_DIR
+        tar -cf - . | (cd ../prod-repo && tar -xf -)
+        cd ../prod-repo
+        echo "✓ Copied build files to production repository"
+        
+        mkdir -p .github/workflows
+        
+    - name: Create GitHub Pages workflow
+      run: |
+        cd prod-repo
+        cat > .github/workflows/github-pages.yml << 'EOF'
+        name: Deploy to GitHub Pages
+        
+        on:
+          push:
+            branches: [ main ]
+          workflow_dispatch:
+        
+        permissions:
+          contents: read
+          pages: write
+          id-token: write
+        
+        concurrency:
+          group: "pages"
+          cancel-in-progress: false
+        
+        jobs:
+          deploy:
+            environment:
+              name: github-pages
+              url: ${{ steps.deployment.outputs.page_url }}
+            runs-on: ubuntu-latest
+            steps:
+              - name: Checkout
+                uses: actions/checkout@v4
+                
+              - name: Setup Pages
+                uses: actions/configure-pages@v4
+                
+              - name: Upload artifact
+                uses: actions/upload-pages-artifact@v3
+                with:
+                  path: "."
+                  
+              - name: Deploy to GitHub Pages
+                id: deployment
+                uses: actions/deploy-pages@v4
+        EOF
+        echo "✓ Created GitHub Pages workflow"
+        
+    - name: Commit and push to production
+      env:
+        PROJECT_NAME: ${{ github.event.client_payload.project_name }}
+      run: |
+        cd prod-repo
+        git add -A
+        
+        if git diff --staged --quiet; then
+          echo "Production deployment timestamp: $(date)" > .deployment-timestamp
+          git add .deployment-timestamp
+        fi
+        
+        git commit -m "Deploy production build - ${PROJECT_NAME} - $(date)"
+        echo "✓ Committed production files"
+        
+        CURRENT_BRANCH=$(git branch --show-current)
+        git push -u origin ${CURRENT_BRANCH}
+        echo "✓ Pushed to ${CURRENT_BRANCH} branch"
+        
+        echo "=== Production deployment completed successfully ==="
+        
+    - name: Update deployment status - Success
+      if: success()
+      run: |
+        curl -X POST 'https://nlzwrlgtjshcjfxfchyz.supabase.co/functions/v1/update-deployment-status' \
+          -H 'Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}' \
+          -H 'Content-Type: application/json' \
+          -d '{
+            "deployment_id": "${{ github.event.client_payload.deployment_id }}",
+            "status": "deployed",
+            "prod_commit_hash": "${{ github.sha }}"
+          }'
+          
+    - name: Update deployment status - Failure
+      if: failure()
+      run: |
+        curl -X POST 'https://nlzwrlgtjshcjfxfchyz.supabase.co/functions/v1/update-deployment-status' \
+          -H 'Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}' \
+          -H 'Content-Type: application/json' \
+          -d '{
+            "deployment_id": "${{ github.event.client_payload.deployment_id }}",
+            "status": "failed",
+            "error_message": "Production deployment failed - check workflow logs"
+          }'
