@@ -1,6 +1,7 @@
 
 import React, { ReactNode } from "react";
 import { usePageViewTracking } from "@/hooks/use-page-view-tracking";
+import { useScrollToTop } from "@/hooks/use-scroll-to-top";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -8,6 +9,7 @@ interface MainLayoutProps {
 
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   usePageViewTracking();
+  useScrollToTop();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-secondary/30 relative overflow-hidden">

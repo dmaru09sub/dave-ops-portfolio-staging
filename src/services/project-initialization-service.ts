@@ -1,168 +1,24 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import type { 
-  ProjectInitializationStatus, 
-  ProjectValidationResult, 
-  RequiredAction,
-  RawProjectInitializationStatus 
+  ProjectInitializationStatus,
+  ProjectValidationResult,
+  ProjectInitializationResult 
 } from '@/types/project-initialization';
 
 export class ProjectInitializationService {
-  
-  static async validateProject(projectId: string): Promise<ProjectValidationResult> {
+  static async initializeProject(projectId: string): Promise<ProjectInitializationResult> {
     try {
-      const { data: project, error: projectError } = await supabase
-        .from('daveops_deployment_projects')
-        .select('*')
-        .eq('id', projectId)
-        .single();
-
-      if (projectError || !project) {
-        return {
-          isValid: false,
-          errors: ['Project not found'],
-          warnings: [],
-          requiredActions: []
-        };
-      }
-
-      const errors: string[] = [];
-      const warnings: string[] = [];
-      const requiredActions: RequiredAction[] = [];
-
-      // Validate repository configuration
-      if (!project.source_repo) {
-        errors.push('Source repository not configured');
-        requiredActions.push({
-          id: 'setup-source-repo',
-          title: 'Configure Source Repository',
-          description: 'Set up the source repository URL',
-          type: 'repository',
-          status: 'pending',
-          automated: false
-        });
-      }
-
-      if (!project.stage_repo) {
-        warnings.push('Stage repository not configured');
-        requiredActions.push({
-          id: 'setup-stage-repo',
-          title: 'Configure Stage Repository',
-          description: 'Set up the staging repository for clean deployments',
-          type: 'repository',
-          status: 'pending',
-          automated: true
-        });
-      }
-
-      if (!project.prod_repo) {
-        warnings.push('Production repository not configured');
-        requiredActions.push({
-          id: 'setup-prod-repo',
-          title: 'Configure Production Repository',
-          description: 'Set up the production repository for live deployments',
-          type: 'repository',
-          status: 'pending',
-          automated: true
-        });
-      }
-
-      // Check for workflow files
-      requiredActions.push({
-        id: 'create-workflows',
-        title: 'Create GitHub Workflows',
-        description: 'Generate and push required CI/CD workflow files',
-        type: 'workflow',
-        status: 'pending',
-        automated: true
+      const { data, error } = await supabase.functions.invoke('project-initialization', {
+        body: { projectId, action: 'initialize' }
       });
 
-      // Check for secrets configuration
-      requiredActions.push({
-        id: 'configure-secrets',
-        title: 'Configure GitHub Secrets',
-        description: 'Set up required secrets (PORTFOLIO_TOKEN, SUPABASE_ANON_KEY)',
-        type: 'secrets',
-        status: 'pending',
-        automated: false
-      });
-
-      return {
-        isValid: errors.length === 0,
-        errors,
-        warnings,
-        requiredActions
-      };
-    } catch (error) {
-      console.error('Error validating project:', error);
-      return {
-        isValid: false,
-        errors: ['Validation failed due to system error'],
-        warnings: [],
-        requiredActions: []
-      };
+      if (error) throw error;
+      return data;
+    } catch (error: any) {
+      console.error('Project initialization failed:', error);
+      throw new Error(error.message || 'Failed to initialize project');
     }
-  }
-
-  static async initializeProject(projectId: string): Promise<{ success: boolean; message: string }> {
-    try {
-      // Get project details
-      const { data: project, error: projectError } = await supabase
-        .from('daveops_deployment_projects')
-        .select('*')
-        .eq('id', projectId)
-        .single();
-
-      if (projectError || !project) {
-        return { success: false, message: 'Project not found' };
-      }
-
-      // Create initialization status record
-      const { error: statusError } = await supabase
-        .from('daveops_project_initialization_status')
-        .upsert({
-          project_id: projectId,
-          workflow_files_created: false,
-          secrets_configured: false,
-          repository_structure_valid: false,
-          github_pages_enabled: false,
-          initial_deployment_successful: false,
-          configuration_complete: false,
-          last_validation_at: new Date().toISOString(),
-          validation_errors: []
-        });
-
-      if (statusError) {
-        console.error('Error creating initialization status:', statusError);
-        return { success: false, message: 'Failed to initialize project tracking' };
-      }
-
-      // Trigger workflow creation (this would be done via GitHub API in production)
-      await this.createWorkflowFiles(project);
-
-      return { success: true, message: 'Project initialization started' };
-    } catch (error) {
-      console.error('Error initializing project:', error);
-      return { success: false, message: 'Initialization failed' };
-    }
-  }
-
-  private static async createWorkflowFiles(project: any): Promise<void> {
-    // In a real implementation, this would use GitHub API to create/push workflow files
-    // For now, we'll simulate the process and update the status
-    console.log('Creating workflow files for project:', project.name);
-    
-    // Simulate workflow creation delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Update status
-    await supabase
-      .from('daveops_project_initialization_status')
-      .update({ 
-        workflow_files_created: true,
-        last_validation_at: new Date().toISOString()
-      })
-      .eq('project_id', project.id);
   }
 
   static async getInitializationStatus(projectId: string): Promise<ProjectInitializationStatus | null> {
@@ -173,25 +29,69 @@ export class ProjectInitializationService {
         .eq('project_id', projectId)
         .single();
 
-      if (error) {
-        console.error('Error fetching initialization status:', error);
-        return null;
-      }
-
-      // Transform raw data to typed interface
-      const rawData = data as RawProjectInitializationStatus;
+      if (error && error.code !== 'PGRST116') throw error;
       
+      if (!data) return null;
+
+      // Ensure validation_errors is always an array
+      const validationErrors = Array.isArray(data.validation_errors) 
+        ? data.validation_errors 
+        : data.validation_errors 
+          ? [data.validation_errors] 
+          : [];
+
       return {
-        ...rawData,
-        validation_errors: Array.isArray(rawData.validation_errors) 
-          ? rawData.validation_errors 
-          : rawData.validation_errors 
-            ? [String(rawData.validation_errors)]
-            : []
+        id: data.id,
+        project_id: data.project_id,
+        configuration_complete: data.configuration_complete,
+        workflow_files_created: data.workflow_files_created,
+        secrets_configured: data.secrets_configured,
+        github_pages_enabled: data.github_pages_enabled,
+        repository_structure_valid: data.repository_structure_valid,
+        initial_deployment_successful: data.initial_deployment_successful,
+        validation_errors: validationErrors,
+        last_validation_at: data.last_validation_at,
+        created_at: data.created_at,
+        updated_at: data.updated_at
       };
     } catch (error) {
-      console.error('Error getting initialization status:', error);
+      console.error('Failed to get initialization status:', error);
       return null;
+    }
+  }
+
+  static async validateProject(projectId: string): Promise<ProjectValidationResult> {
+    try {
+      const { data, error } = await supabase.functions.invoke('project-initialization', {
+        body: { projectId, action: 'validate' }
+      });
+
+      if (error) throw error;
+      
+      const status = data.data as ProjectInitializationStatus;
+      const isValid = status?.configuration_complete && 
+                     status?.workflow_files_created && 
+                     status?.secrets_configured;
+      
+      return {
+        isValid,
+        errors: status?.validation_errors || [],
+        warnings: [],
+        recommendations: isValid ? [] : [
+          'Complete project initialization to enable full functionality',
+          'Ensure all required secrets are configured',
+          'Verify GitHub workflow files are properly set up'
+        ],
+        requiredActions: []
+      };
+    } catch (error: any) {
+      return {
+        isValid: false,
+        errors: [error.message || 'Validation failed'],
+        warnings: [],
+        recommendations: ['Try initializing the project again'],
+        requiredActions: []
+      };
     }
   }
 }

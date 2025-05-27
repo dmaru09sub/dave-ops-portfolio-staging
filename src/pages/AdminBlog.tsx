@@ -5,7 +5,7 @@ import ViewLiveSiteButton from '@/components/admin/view-live-site-button';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { useBlogManagement } from '@/hooks/use-blog-management';
-import BlogForm from '@/components/admin/blog/blog-form';
+import EnhancedBlogForm from '@/components/admin/blog/enhanced-blog-form';
 import BlogTable from '@/components/admin/blog/blog-table';
 
 const AdminBlog = () => {
@@ -42,7 +42,7 @@ const AdminBlog = () => {
           <div>
             <h1 className="text-3xl font-bold">Blog Management</h1>
             <p className="text-muted-foreground mt-1">
-              Create and manage blog posts for your portfolio
+              Create and manage blog posts for your portfolio with markdown support
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -55,7 +55,7 @@ const AdminBlog = () => {
         </div>
 
         {isCreating && (
-          <BlogForm
+          <EnhancedBlogForm
             formData={formData}
             setFormData={setFormData}
             onSubmit={handleSubmit}
@@ -75,7 +75,7 @@ const AdminBlog = () => {
         {!loading && blogPosts.length === 0 && !isCreating && (
           <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg">
             <h3 className="text-lg font-medium text-gray-900 mb-2">No blog posts yet</h3>
-            <p className="text-gray-500 mb-4">Get started by creating your first blog post</p>
+            <p className="text-gray-500 mb-4">Get started by creating your first blog post with markdown support</p>
             <Button onClick={startCreating}>Create Blog Post</Button>
           </div>
         )}

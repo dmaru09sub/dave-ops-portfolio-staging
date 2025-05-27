@@ -16,7 +16,7 @@ interface AboutContentProps {
 }
 
 export const AboutContent = ({ aboutContent }: AboutContentProps) => {
-  // Default content to match knowledge base description
+  // Updated default content to match your professional background
   const defaultContent = {
     hero: {
       title: "About Dave-Ops",
@@ -29,6 +29,12 @@ At its core, the portfolio is backed by a robust admin management portal, enabli
       content: `As my journey continues, I'll be sharing the knowledge behind this platform through a series of YouTube tutorials—breaking down how each piece fits together and exploring the latest trends in DevOps, cloud, and AI. Whether you're an aspiring developer, a seasoned engineer, or simply curious, I invite you to learn, build, and grow along with me.
 
 This entire system is available as an open-source template for public use and learning. The complete documentation, setup guides, and best practices are included to help others implement their own 3-stage deployment pipelines.`
+    },
+    experience: {
+      title: "Professional Background & Expertise",
+      content: `I've been working with technology since I was 10 years old, and have held professional positions in the field for over 16 years. Technology comes naturally to me—if I don't understand something at first, you can bet I will master it through persistence and dedication.
+
+This deep experience spans full-stack development, cloud architecture, DevOps practices, and emerging technologies. My approach combines technical excellence with practical problem-solving, always focusing on scalable, maintainable solutions that deliver real business value.`
     },
     architecture: {
       title: "3-Stage Pipeline Architecture",
@@ -81,6 +87,17 @@ This entire system is available as an open-source template for public use and le
             <CardContent>
               <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
                 {defaultContent.hero.content}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>{defaultContent.experience.title}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
+                {defaultContent.experience.content}
               </p>
             </CardContent>
           </Card>

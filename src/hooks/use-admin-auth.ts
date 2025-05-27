@@ -1,10 +1,10 @@
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/auth-context';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
 export const useAdminAuth = () => {
-  const { user, session } = useAuth();
+  const { user } = useAuth();
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
 
@@ -85,7 +85,6 @@ export const useAdminAuth = () => {
     loading,
     adminSignIn,
     logout,
-    user,
-    session
+    user
   };
 };

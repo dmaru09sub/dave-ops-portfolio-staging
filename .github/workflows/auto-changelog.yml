@@ -1,0 +1,143 @@
+
+name: Auto Changelog Update
+
+on:
+  push:
+    branches: [main, develop, stage]
+  pull_request:
+    types: [closed]
+    branches: [main, develop, stage]
+
+jobs:
+  update-changelog:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get commit info
+        id: commit-info
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            COMMIT_SHA="${{ github.event.pull_request.merge_commit_sha }}"
+            COMMIT_MESSAGE="${{ github.event.pull_request.title }}"
+            AUTHOR_NAME="${{ github.event.pull_request.user.login }}"
+            AUTHOR_EMAIL="${{ github.event.pull_request.user.email }}"
+            PR_NUMBER="${{ github.event.pull_request.number }}"
+            PR_URL="${{ github.event.pull_request.html_url }}"
+          else
+            COMMIT_SHA="${{ github.sha }}"
+            COMMIT_MESSAGE=$(git log -1 --pretty=format:'%s')
+            AUTHOR_NAME=$(git log -1 --pretty=format:'%an')
+            AUTHOR_EMAIL=$(git log -1 --pretty=format:'%ae')
+            PR_NUMBER=""
+            PR_URL=""
+          fi
+          
+          # Get affected files
+          AFFECTED_FILES=$(git diff --name-only HEAD~1 HEAD | jq -R -s -c 'split("\n")[:-1]')
+          
+          # Determine change type based on commit message or file changes
+          CHANGE_TYPE="feature"
+          if echo "$COMMIT_MESSAGE" | grep -qi "fix\|bug"; then
+            CHANGE_TYPE="bugfix"
+          elif echo "$COMMIT_MESSAGE" | grep -qi "feat\|add"; then
+            CHANGE_TYPE="feature"
+          elif echo "$COMMIT_MESSAGE" | grep -qi "refactor"; then
+            CHANGE_TYPE="refactor"
+          elif echo "$COMMIT_MESSAGE" | grep -qi "docs\|readme"; then
+            CHANGE_TYPE="documentation"
+          elif echo "$COMMIT_MESSAGE" | grep -qi "test"; then
+            CHANGE_TYPE="testing"
+          elif echo "$COMMIT_MESSAGE" | grep -qi "chore\|deps"; then
+            CHANGE_TYPE="maintenance"
+          fi
+          
+          # Determine severity
+          SEVERITY="minor"
+          if echo "$COMMIT_MESSAGE" | grep -qi "breaking\|major"; then
+            SEVERITY="major"
+          elif echo "$COMMIT_MESSAGE" | grep -qi "critical\|urgent"; then
+            SEVERITY="critical"
+          fi
+          
+          echo "commit_sha=$COMMIT_SHA" >> $GITHUB_OUTPUT
+          echo "commit_message=$COMMIT_MESSAGE" >> $GITHUB_OUTPUT
+          echo "author_name=$AUTHOR_NAME" >> $GITHUB_OUTPUT
+          echo "author_email=$AUTHOR_EMAIL" >> $GITHUB_OUTPUT
+          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
+          echo "affected_files=$AFFECTED_FILES" >> $GITHUB_OUTPUT
+          echo "change_type=$CHANGE_TYPE" >> $GITHUB_OUTPUT
+          echo "severity=$SEVERITY" >> $GITHUB_OUTPUT
+          echo "branch=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
+
+      - name: Create changelog entry
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          COMMIT_SHA: ${{ steps.commit-info.outputs.commit_sha }}
+          COMMIT_MESSAGE: ${{ steps.commit-info.outputs.commit_message }}
+          AUTHOR_NAME: ${{ steps.commit-info.outputs.author_name }}
+          AUTHOR_EMAIL: ${{ steps.commit-info.outputs.author_email }}
+          PR_NUMBER: ${{ steps.commit-info.outputs.pr_number }}
+          PR_URL: ${{ steps.commit-info.outputs.pr_url }}
+          AFFECTED_FILES: ${{ steps.commit-info.outputs.affected_files }}
+          CHANGE_TYPE: ${{ steps.commit-info.outputs.change_type }}
+          SEVERITY: ${{ steps.commit-info.outputs.severity }}
+          BRANCH: ${{ steps.commit-info.outputs.branch }}
+        run: |
+          # Create changelog entry via Supabase API
+          CHANGELOG_DATA=$(cat <<EOF
+          {
+            "title": "$COMMIT_MESSAGE",
+            "description": "Automated changelog entry from commit $COMMIT_SHA on branch $BRANCH",
+            "change_type": "$CHANGE_TYPE",
+            "severity": "$SEVERITY",
+            "github_commit_hash": "$COMMIT_SHA",
+            "github_commit_url": "https://github.com/${{ github.repository }}/commit/$COMMIT_SHA",
+            "pull_request_number": ${PR_NUMBER:-null},
+            "pull_request_url": ${PR_URL:+"\"$PR_URL\""},
+            "author_name": "$AUTHOR_NAME",
+            "author_email": "$AUTHOR_EMAIL",
+            "author_github_username": "${{ github.actor }}",
+            "tags": ["automated", "github-action", "$BRANCH"],
+            "metadata": {
+              "github_workflow": "${{ github.workflow }}",
+              "github_run_id": "${{ github.run_id }}",
+              "github_run_number": "${{ github.run_number }}",
+              "repository": "${{ github.repository }}",
+              "branch": "$BRANCH",
+              "event_type": "${{ github.event_name }}"
+            },
+            "affected_files": $AFFECTED_FILES,
+            "published": true
+          }
+          EOF
+          )
+          
+          # Make API call to Supabase
+          curl -X POST \
+            "$SUPABASE_URL/rest/v1/daveops_changelog_entries" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            -d "$CHANGELOG_DATA"
+
+      - name: Notify deployment status
+        if: success()
+        run: |
+          echo "✅ Changelog entry created successfully for commit ${{ steps.commit-info.outputs.commit_sha }}"
+          echo "📝 Change Type: ${{ steps.commit-info.outputs.change_type }}"
+          echo "🔍 Severity: ${{ steps.commit-info.outputs.severity }}"
+          echo "👤 Author: ${{ steps.commit-info.outputs.author_name }}"
+          
+      - name: Handle failure
+        if: failure()
+        run: |
+          echo "❌ Failed to create changelog entry for commit ${{ steps.commit-info.outputs.commit_sha }}"
+          echo "Please check the Supabase configuration and API permissions"

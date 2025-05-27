@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -84,11 +85,26 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'envelope-send': {
+					'0%': {
+						transform: 'translateX(0) translateY(0) scale(1) rotate(0deg)',
+						opacity: '1'
+					},
+					'50%': {
+						transform: 'translateX(200px) translateY(-100px) scale(0.8) rotate(15deg)',
+						opacity: '0.8'
+					},
+					'100%': {
+						transform: 'translateX(400px) translateY(-200px) scale(0.3) rotate(45deg)',
+						opacity: '0'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'envelope-send': 'envelope-send 2s ease-out forwards'
 			}
 		}
 	},

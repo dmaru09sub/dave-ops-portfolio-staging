@@ -1,18 +1,24 @@
 
 import { useState, useEffect } from 'react';
 import { ProjectInitializationService } from '@/services/project-initialization-service';
-import type { ProjectInitializationStatus, ProjectValidationResult } from '@/types/project-initialization';
+import type { ProjectValidationResult } from '@/types/project-initialization';
 import { useToast } from '@/hooks/use-toast';
 
-export const useProjectInitialization = (projectId: string) => {
-  const [initializationStatus, setInitializationStatus] = useState<ProjectInitializationStatus | null>(null);
+// Use the service interface directly to avoid type conflicts
+type ProjectInitializationStatus = Awaited<ReturnType<typeof ProjectInitializationService.getInitializationStatus>>;
+
+export const useProjectInitialization = (projectId?: string) => {
+  const [initializationStatus, setInitializationStatus] = useState<ProjectInitializationStatus>(null);
   const [validationResult, setValidationResult] = useState<ProjectValidationResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [initializing, setInitializing] = useState(false);
   const { toast } = useToast();
 
   const loadStatus = async () => {
-    if (!projectId) return;
+    if (!projectId) {
+      setLoading(false);
+      return;
+    }
     
     setLoading(true);
     try {

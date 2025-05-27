@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Activity, Clock, CheckCircle, XCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Activity, Clock, CheckCircle, XCircle, AlertCircle, Loader2, Github, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface DeploymentStatusDisplayProps {
@@ -17,6 +17,7 @@ interface DeploymentStatusDisplayProps {
   loading: boolean;
   showOnlyFinalStatus?: boolean;
   deploymentStage?: 'stage' | 'prod';
+  liveUrl?: string;
 }
 
 const DeploymentStatusDisplay: React.FC<DeploymentStatusDisplayProps> = ({ 
@@ -25,7 +26,8 @@ const DeploymentStatusDisplay: React.FC<DeploymentStatusDisplayProps> = ({
   stageRepo,
   loading,
   showOnlyFinalStatus = false,
-  deploymentStage 
+  deploymentStage,
+  liveUrl
 }) => {
   // Determine which repository's actions to link to based on the deployment stage
   const getActionsRepo = () => {
@@ -37,7 +39,17 @@ const DeploymentStatusDisplay: React.FC<DeploymentStatusDisplayProps> = ({
     return sourceRepo;
   };
 
-  const actionsUrl = `https://github.com/${getActionsRepo()}/actions`;
+  const getDisplayRepo = () => {
+    if (deploymentStage === 'prod' && stageRepo) {
+      return stageRepo;
+    }
+    return sourceRepo;
+  };
+
+  const actionsRepo = getActionsRepo();
+  const displayRepo = getDisplayRepo();
+  const actionsUrl = `https://github.com/${actionsRepo}/actions`;
+  const repoUrl = `https://github.com/${displayRepo}`;
 
   if (loading) {
     return (
@@ -55,17 +67,43 @@ const DeploymentStatusDisplay: React.FC<DeploymentStatusDisplayProps> = ({
           <AlertCircle className="h-3 w-3 text-gray-400" />
           <span className="text-xs text-gray-500">No deployments yet</span>
         </div>
-        <Button variant="ghost" size="sm" className="h-auto p-0 justify-start" asChild>
-          <a
-            href={actionsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-blue-600 hover:underline flex items-center gap-1"
-          >
-            <Activity className="h-3 w-3" />
-            View Actions
-          </a>
-        </Button>
+        <div className="space-y-1">
+          <Button variant="ghost" size="sm" className="h-auto p-0 justify-start" asChild>
+            <a
+              href={repoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+            >
+              <Github className="h-3 w-3" />
+              {displayRepo}
+            </a>
+          </Button>
+          <Button variant="ghost" size="sm" className="h-auto p-0 justify-start" asChild>
+            <a
+              href={actionsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+            >
+              <Activity className="h-3 w-3" />
+              View Actions
+            </a>
+          </Button>
+          {liveUrl && (
+            <Button variant="ghost" size="sm" className="h-auto p-0 justify-start" asChild>
+              <a
+                href={liveUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-green-600 hover:underline flex items-center gap-1"
+              >
+                <ExternalLink className="h-3 w-3" />
+                Live Site
+              </a>
+            </Button>
+          )}
+        </div>
       </div>
     );
   }
@@ -158,17 +196,43 @@ const DeploymentStatusDisplay: React.FC<DeploymentStatusDisplayProps> = ({
           Error: {deployment.error_message}
         </div>
       )}
-      <Button variant="ghost" size="sm" className="h-auto p-0 justify-start" asChild>
-        <a
-          href={actionsUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs text-blue-600 hover:underline flex items-center gap-1"
-        >
-          <Activity className="h-3 w-3" />
-          View GitHub Actions
-        </a>
-      </Button>
+      <div className="space-y-1">
+        <Button variant="ghost" size="sm" className="h-auto p-0 justify-start" asChild>
+          <a
+            href={repoUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+          >
+            <Github className="h-3 w-3" />
+            {displayRepo}
+          </a>
+        </Button>
+        <Button variant="ghost" size="sm" className="h-auto p-0 justify-start" asChild>
+          <a
+            href={actionsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+          >
+            <Activity className="h-3 w-3" />
+            GitHub Actions
+          </a>
+        </Button>
+        {liveUrl && (
+          <Button variant="ghost" size="sm" className="h-auto p-0 justify-start" asChild>
+            <a
+              href={liveUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-green-600 hover:underline flex items-center gap-1"
+            >
+              <ExternalLink className="h-3 w-3" />
+              Live Site
+            </a>
+          </Button>
+        )}
+      </div>
     </div>
   );
 };

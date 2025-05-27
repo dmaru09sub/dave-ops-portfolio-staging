@@ -113,6 +113,7 @@ const ImprovedDeploymentStageCard: React.FC<ImprovedDeploymentStageCardProps> = 
               stageRepo={project.stage_repo || undefined}
               deploymentStage="prod"
               loading={loading}
+              liveUrl={project.prod_url || undefined}
             />
           </div>
         </CardContent>
@@ -197,6 +198,7 @@ const ImprovedDeploymentStageCard: React.FC<ImprovedDeploymentStageCardProps> = 
               deploymentStage="prod"
               loading={loading}
               showOnlyFinalStatus={true}
+              liveUrl={project.prod_url || undefined}
             />
           </div>
         </CardContent>
