@@ -9,21 +9,21 @@ export const ContactInfoSection = () => {
       icon: Github,
       label: 'GitHub',
       value: '@dave-ops',
-      href: 'https://github.com/dave-ops',
+      href: 'https://github.com/dmaru09sub',
       color: 'hover:text-gray-900'
     },
     {
       icon: Linkedin,
       label: 'LinkedIn',
       value: 'Connect professionally',
-      href: 'https://linkedin.com/in/dave-ops',
+      href: 'https://www.linkedin.com/in/david-marusiak-a899a8198/',
       color: 'hover:text-blue-600'
     },
     {
       icon: Twitter,
       label: 'Twitter',
       value: '@daveops_net',
-      href: 'https://twitter.com/daveops_net',
+      href: '',
       color: 'hover:text-blue-400'
     },
     {
