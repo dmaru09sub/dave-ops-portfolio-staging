@@ -3,7 +3,8 @@ import { SiteHeader } from "@/components/site-header";
 import MainLayout from "@/components/layouts/main-layout";
 import { AboutHero } from "@/components/about/about-hero";
 import { AboutContent } from "@/components/about/about-content";
-import { ContactInfo } from "@/components/about/contact-info";
+import { EnhancedContactInfo } from "@/components/about/enhanced-contact-info";
+import { PortfolioFooter } from "@/components/portfolio-footer";
 import { useAboutData } from "@/hooks/use-about-data";
 
 const About = () => {
@@ -21,14 +22,18 @@ const About = () => {
                 <div className="h-10 bg-gray-200 rounded w-1/2 mx-auto"></div>
                 <div className="h-6 bg-gray-200 rounded w-3/4 mx-auto"></div>
               </div>
-              <div className="space-y-6">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="h-32 bg-gray-200 rounded-lg"></div>
-                ))}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2">
+                  <div className="h-96 bg-gray-200 rounded-lg"></div>
+                </div>
+                <div className="lg:col-span-1">
+                  <div className="h-64 bg-gray-200 rounded-lg"></div>
+                </div>
               </div>
             </div>
           </div>
         </div>
+        <PortfolioFooter />
       </MainLayout>
     );
   }
@@ -37,15 +42,22 @@ const About = () => {
     <MainLayout>
       <SiteHeader />
       
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 flex-1">
         <div className="max-w-4xl mx-auto">
           <AboutHero />
-          <div className="space-y-8">
-            <AboutContent aboutContent={aboutContent} />
-            <ContactInfo siteInfo={siteInfo} />
+          
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+              <AboutContent aboutContent={aboutContent} />
+            </div>
+            <div className="lg:col-span-1">
+              <EnhancedContactInfo siteInfo={siteInfo} />
+            </div>
           </div>
         </div>
       </div>
+      
+      <PortfolioFooter />
     </MainLayout>
   );
 };

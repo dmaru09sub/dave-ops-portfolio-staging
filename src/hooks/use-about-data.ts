@@ -10,6 +10,7 @@ interface AboutContent {
   image_url?: string;
   published: boolean;
   sort_order: number;
+  is_active?: boolean;
 }
 
 interface SiteInfo {
@@ -18,22 +19,26 @@ interface SiteInfo {
 }
 
 export const useAboutData = () => {
-  const [aboutContent, setAboutContent] = useState<AboutContent[]>([]);
+  const [aboutContent, setAboutContent] = useState<AboutContent | null>(null);
   const [siteInfo, setSiteInfo] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch about content
+        // Fetch the single active about content
         const { data: aboutData, error: aboutError } = await supabase
           .from('daveops_about_content')
           .select('*')
+          .eq('is_active', true)
           .eq('published', true)
-          .order('sort_order', { ascending: true });
+          .single();
 
-        if (aboutError) throw aboutError;
-        setAboutContent(aboutData || []);
+        if (aboutError && aboutError.code !== 'PGRST116') {
+          console.error('Error fetching about content:', aboutError);
+        } else {
+          setAboutContent(aboutData);
+        }
 
         // Fetch site info for contact details
         const { data: siteInfoData, error: siteInfoError } = await supabase

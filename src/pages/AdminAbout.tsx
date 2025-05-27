@@ -5,10 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Edit, Trash, Plus, Eye, EyeOff } from 'lucide-react';
+import { Save, Edit, Eye, EyeOff } from 'lucide-react';
 
 interface AboutContent {
   id: string;
@@ -18,23 +17,22 @@ interface AboutContent {
   image_url: string;
   published: boolean;
   sort_order: number;
+  is_active: boolean;
   updated_at: string;
 }
 
 const AdminAbout = () => {
-  const [content, setContent] = useState<AboutContent[]>([]);
+  const [content, setContent] = useState<AboutContent | null>(null);
   const [loading, setLoading] = useState(true);
-  const [editingContent, setEditingContent] = useState<AboutContent | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState(false);
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
-    section_key: '',
     title: '',
     content: '',
     image_url: '',
-    published: true,
-    sort_order: 0
+    published: true
   });
 
   useEffect(() => {
@@ -46,10 +44,22 @@ const AdminAbout = () => {
       const { data, error } = await supabase
         .from('daveops_about_content')
         .select('*')
-        .order('sort_order', { ascending: true });
+        .eq('is_active', true)
+        .single();
 
-      if (error) throw error;
-      setContent(data || []);
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+
+      if (data) {
+        setContent(data);
+        setFormData({
+          title: data.title || '',
+          content: data.content || '',
+          image_url: data.image_url || '',
+          published: data.published
+        });
+      }
     } catch (error) {
       console.error('Error fetching about content:', error);
       toast({
@@ -64,26 +74,43 @@ const AdminAbout = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSaving(true);
 
     try {
-      if (editingContent) {
+      if (content) {
+        // Update existing content
         const { error } = await supabase
           .from('daveops_about_content')
-          .update(formData)
-          .eq('id', editingContent.id);
+          .update({
+            title: formData.title,
+            content: formData.content,
+            image_url: formData.image_url,
+            published: formData.published,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', content.id);
 
         if (error) throw error;
-        toast({ title: 'Success', description: 'Content updated successfully' });
+        toast({ title: 'Success', description: 'About content updated successfully' });
       } else {
+        // Create new content
         const { error } = await supabase
           .from('daveops_about_content')
-          .insert([formData]);
+          .insert([{
+            section_key: 'main',
+            title: formData.title,
+            content: formData.content,
+            image_url: formData.image_url,
+            published: formData.published,
+            is_active: true,
+            sort_order: 0
+          }]);
 
         if (error) throw error;
-        toast({ title: 'Success', description: 'Content created successfully' });
+        toast({ title: 'Success', description: 'About content created successfully' });
       }
 
-      resetForm();
+      setEditing(false);
       fetchContent();
     } catch (error) {
       console.error('Error saving content:', error);
@@ -92,45 +119,14 @@ const AdminAbout = () => {
         description: 'Failed to save content',
         variant: 'destructive'
       });
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleEdit = (content: AboutContent) => {
-    setEditingContent(content);
-    setFormData({
-      section_key: content.section_key,
-      title: content.title || '',
-      content: content.content || '',
-      image_url: content.image_url || '',
-      published: content.published,
-      sort_order: content.sort_order
-    });
-    setIsCreating(true);
-  };
+  const togglePublished = async () => {
+    if (!content) return;
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this content section?')) return;
-
-    try {
-      const { error } = await supabase
-        .from('daveops_about_content')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-      toast({ title: 'Success', description: 'Content deleted successfully' });
-      fetchContent();
-    } catch (error) {
-      console.error('Error deleting content:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to delete content',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const togglePublished = async (content: AboutContent) => {
     try {
       const { error } = await supabase
         .from('daveops_about_content')
@@ -139,22 +135,18 @@ const AdminAbout = () => {
 
       if (error) throw error;
       fetchContent();
+      toast({ 
+        title: 'Success', 
+        description: `Content ${!content.published ? 'published' : 'unpublished'} successfully` 
+      });
     } catch (error) {
       console.error('Error toggling published status:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update published status',
+        variant: 'destructive'
+      });
     }
-  };
-
-  const resetForm = () => {
-    setFormData({
-      section_key: '',
-      title: '',
-      content: '',
-      image_url: '',
-      published: true,
-      sort_order: 0
-    });
-    setEditingContent(null);
-    setIsCreating(false);
   };
 
   if (loading) {
@@ -172,44 +164,52 @@ const AdminAbout = () => {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold">About Content Management</h1>
-          <Button onClick={() => setIsCreating(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Content Section
-          </Button>
+          <div className="flex gap-2">
+            {content && (
+              <Button
+                variant="outline"
+                onClick={togglePublished}
+                className="flex items-center gap-2"
+              >
+                {content.published ? (
+                  <>
+                    <Eye className="h-4 w-4" />
+                    Published
+                  </>
+                ) : (
+                  <>
+                    <EyeOff className="h-4 w-4" />
+                    Draft
+                  </>
+                )}
+              </Button>
+            )}
+            {!editing && (
+              <Button onClick={() => setEditing(true)}>
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Content
+              </Button>
+            )}
+          </div>
         </div>
 
-        {isCreating && (
+        {editing ? (
           <Card>
             <CardHeader>
-              <CardTitle>{editingContent ? 'Edit Content Section' : 'Create New Content Section'}</CardTitle>
+              <CardTitle>Edit About Content</CardTitle>
+              <CardDescription>
+                Update the main about content that appears on the About page
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium">Section Key</label>
-                    <Input
-                      value={formData.section_key}
-                      onChange={(e) => setFormData({ ...formData, section_key: e.target.value })}
-                      placeholder="hero, skills, experience"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Sort Order</label>
-                    <Input
-                      type="number"
-                      value={formData.sort_order}
-                      onChange={(e) => setFormData({ ...formData, sort_order: parseInt(e.target.value) || 0 })}
-                    />
-                  </div>
-                </div>
-
                 <div>
                   <label className="text-sm font-medium">Title</label>
                   <Input
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder="About Dave-Ops"
+                    required
                   />
                 </div>
 
@@ -218,16 +218,18 @@ const AdminAbout = () => {
                   <Textarea
                     value={formData.content}
                     onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                    rows={8}
-                    placeholder="Write your content here..."
+                    rows={12}
+                    placeholder="Write your about content here..."
+                    className="min-h-[300px]"
                   />
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium">Image URL</label>
+                  <label className="text-sm font-medium">Image URL (Optional)</label>
                   <Input
                     value={formData.image_url}
                     onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                    placeholder="https://example.com/image.jpg"
                   />
                 </div>
 
@@ -243,84 +245,55 @@ const AdminAbout = () => {
                 </div>
 
                 <div className="flex gap-2">
-                  <Button type="submit">
-                    {editingContent ? 'Update' : 'Create'} Content
+                  <Button type="submit" disabled={saving}>
+                    <Save className="h-4 w-4 mr-2" />
+                    {saving ? 'Saving...' : 'Save Content'}
                   </Button>
-                  <Button type="button" variant="outline" onClick={resetForm}>
+                  <Button type="button" variant="outline" onClick={() => setEditing(false)}>
                     Cancel
                   </Button>
                 </div>
               </form>
             </CardContent>
           </Card>
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle>Current About Content</CardTitle>
+              <CardDescription>
+                {content ? 'Preview of the active about content' : 'No active about content found'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {content ? (
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-semibold text-lg">{content.title}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Last updated: {new Date(content.updated_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="prose prose-gray max-w-none">
+                    <p className="whitespace-pre-line text-sm">{content.content}</p>
+                  </div>
+                  {content.image_url && (
+                    <div>
+                      <p className="text-sm font-medium">Image URL:</p>
+                      <p className="text-sm text-muted-foreground break-all">{content.image_url}</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground mb-4">No about content found</p>
+                  <Button onClick={() => setEditing(true)}>
+                    Create About Content
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         )}
-
-        <Card>
-          <CardHeader>
-            <CardTitle>About Content Sections</CardTitle>
-            <CardDescription>Manage your about page content</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Section Key</TableHead>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Order</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {content.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-medium">{item.section_key}</TableCell>
-                    <TableCell>{item.title || 'No title'}</TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => togglePublished(item)}
-                        className="flex items-center gap-1"
-                      >
-                        {item.published ? (
-                          <>
-                            <Eye className="h-3 w-3" />
-                            Published
-                          </>
-                        ) : (
-                          <>
-                            <EyeOff className="h-3 w-3" />
-                            Draft
-                          </>
-                        )}
-                      </Button>
-                    </TableCell>
-                    <TableCell>{item.sort_order}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(item)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(item.id)}
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
       </div>
     </AdminLayout>
   );

@@ -3,6 +3,7 @@ import MainLayout from "@/components/layouts/main-layout";
 import { SiteHeader } from "@/components/site-header";
 import { ContactHero } from "@/components/contact/contact-hero";
 import { ContactInfoSection } from "@/components/contact/contact-info-section";
+import { PortfolioFooter } from "@/components/portfolio-footer";
 import EnhancedContactForm from "@/components/contact/enhanced-contact-form";
 
 const Contact = () => {
@@ -10,7 +11,7 @@ const Contact = () => {
     <MainLayout>
       <SiteHeader />
       
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 py-12 flex-1">
         <ContactHero />
         
         <div className="max-w-6xl mx-auto">
@@ -24,6 +25,8 @@ const Contact = () => {
           </div>
         </div>
       </div>
+      
+      <PortfolioFooter />
     </MainLayout>
   );
 };

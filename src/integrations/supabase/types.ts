@@ -197,6 +197,7 @@ export type Database = {
           content: string | null
           id: string
           image_url: string | null
+          is_active: boolean | null
           published: boolean | null
           section_key: string
           sort_order: number | null
@@ -207,6 +208,7 @@ export type Database = {
           content?: string | null
           id?: string
           image_url?: string | null
+          is_active?: boolean | null
           published?: boolean | null
           section_key: string
           sort_order?: number | null
@@ -217,6 +219,7 @@ export type Database = {
           content?: string | null
           id?: string
           image_url?: string | null
+          is_active?: boolean | null
           published?: boolean | null
           section_key?: string
           sort_order?: number | null

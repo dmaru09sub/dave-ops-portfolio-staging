@@ -2,6 +2,7 @@
 import { Card } from "@/components/ui/card";
 import { SiteHeader } from "@/components/site-header";
 import MainLayout from "@/components/layouts/main-layout";
+import { PortfolioFooter } from "@/components/portfolio-footer";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Code, Youtube, User, Briefcase } from "lucide-react";
@@ -11,7 +12,7 @@ const Index = () => {
     <MainLayout>
       <SiteHeader />
       
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 flex-1">
         <div className="max-w-4xl mx-auto text-center mb-16 space-y-6">
           <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
             Where Dev meets 
@@ -84,6 +85,8 @@ const Index = () => {
           </Card>
         </div>
       </div>
+      
+      <PortfolioFooter />
     </MainLayout>
   );
 };
