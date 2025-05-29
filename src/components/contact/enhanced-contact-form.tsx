@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { EnvelopeAnimation } from "./envelope-animation";
 import { Send, User, Mail, MessageSquare } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const EnhancedContactForm = () => {
   const [formData, setFormData] = useState({
@@ -28,11 +29,22 @@ const EnhancedContactForm = () => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Show envelope animation
-    setShowEnvelope(true);
+    try {
+      // Show envelope animation
+      setShowEnvelope(true);
 
-    // Simulate form submission
-    setTimeout(() => {
+      // Submit to Supabase
+      const { error } = await supabase
+        .from('daveops_contact_submissions')
+        .insert({
+          name: formData.name,
+          email: formData.email,
+          subject: formData.subject,
+          message: formData.message
+        });
+
+      if (error) throw error;
+
       toast({
         title: "Message sent successfully! 📧",
         description: "Thank you for your message. I'll get back to you within 24 hours."
@@ -45,8 +57,16 @@ const EnhancedContactForm = () => {
         message: ""
       });
       
+    } catch (error) {
+      console.error('Error submitting contact form:', error);
+      toast({
+        title: "Error sending message",
+        description: "There was a problem sending your message. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
       setIsSubmitting(false);
-    }, 2000);
+    }
   };
 
   const handleEnvelopeAnimationEnd = () => {

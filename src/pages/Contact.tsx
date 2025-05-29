@@ -2,11 +2,16 @@
 import MainLayout from "@/components/layouts/main-layout";
 import { SiteHeader } from "@/components/site-header";
 import { ContactHero } from "@/components/contact/contact-hero";
-import { ContactInfoSection } from "@/components/contact/contact-info-section";
+import { EnhancedContactInfoSection } from "@/components/contact/enhanced-contact-info-section";
 import { PortfolioFooter } from "@/components/portfolio-footer";
 import EnhancedContactForm from "@/components/contact/enhanced-contact-form";
+import { usePageViewTracking } from "@/hooks/use-page-view-tracking";
+import { useSiteTitle } from "@/hooks/use-site-title";
 
 const Contact = () => {
+  usePageViewTracking();
+  useSiteTitle('Contact');
+
   return (
     <MainLayout>
       <SiteHeader />
@@ -20,7 +25,7 @@ const Contact = () => {
               <EnhancedContactForm />
             </div>
             <div className="lg:col-span-1">
-              <ContactInfoSection />
+              <EnhancedContactInfoSection />
             </div>
           </div>
         </div>

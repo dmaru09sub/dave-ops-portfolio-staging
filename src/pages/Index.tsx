@@ -6,8 +6,11 @@ import { PortfolioFooter } from "@/components/portfolio-footer";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Code, Youtube, User, Briefcase } from "lucide-react";
+import { usePageViewTracking } from "@/hooks/use-page-view-tracking";
 
 const Index = () => {
+  usePageViewTracking();
+
   return (
     <MainLayout>
       <SiteHeader />
@@ -49,7 +52,7 @@ const Index = () => {
                 </p>
               </div>
               <Button asChild className="w-full mt-auto">
-                <Link to="/tutorials">Watch Tutorials</Link>
+                <Link to="/tutorials">View Tutorials</Link>
               </Button>
             </div>
           </Card>

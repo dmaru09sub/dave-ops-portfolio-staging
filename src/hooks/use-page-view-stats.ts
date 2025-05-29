@@ -15,15 +15,22 @@ export const usePageViewStats = () => {
   return useQuery({
     queryKey: ['page-view-stats'],
     queryFn: async (): Promise<PageViewStats[]> => {
-      const { data, error } = await supabase.rpc('get_page_view_stats');
-      
-      if (error) {
-        console.error('Error fetching page view stats:', error);
+      try {
+        const { data, error } = await supabase.rpc('get_page_view_stats');
+        
+        if (error) {
+          console.error('Error fetching page view stats:', error);
+          throw new Error(`Failed to fetch analytics: ${error.message}`);
+        }
+        
+        return data || [];
+      } catch (error) {
+        console.error('Analytics fetch error:', error);
         throw error;
       }
-      
-      return data || [];
     },
     refetchInterval: 30000, // Refetch every 30 seconds
+    retry: 3,
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 };

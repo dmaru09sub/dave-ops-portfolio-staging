@@ -1,11 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/admin/admin-layout';
-import PageAnalytics from '@/components/admin/page-analytics';
-import ChangelogSection from '@/components/admin/changelog-section';
+import ImprovedChangelogSection from '@/components/admin/improved-changelog-section';
 import ViewLiveSiteButton from '@/components/admin/view-live-site-button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
-import { FolderOpen, BookOpen, User, Mail, Eye, MessageSquare } from 'lucide-react';
+import { FolderOpen, BookOpen, User, Mail, Eye, MessageSquare, BarChart3 } from 'lucide-react';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
@@ -109,11 +109,8 @@ const AdminDashboard = () => {
           })}
         </div>
 
-        {/* Page Analytics Section */}
-        <PageAnalytics />
-
-        {/* Changelog Section */}
-        <ChangelogSection />
+        {/* Improved Changelog Section */}
+        <ImprovedChangelogSection />
 
         <div className="grid gap-6 md:grid-cols-2">
           <Card>
@@ -149,6 +146,13 @@ const AdminDashboard = () => {
                   <span>Review Contact Messages</span>
                   <MessageSquare className="h-4 w-4" />
                 </a>
+                <a 
+                  href="/admin/analytics" 
+                  className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent transition-colors"
+                >
+                  <span>View Analytics</span>
+                  <BarChart3 className="h-4 w-4" />
+                </a>
               </div>
             </CardContent>
           </Card>
@@ -179,8 +183,8 @@ const AdminDashboard = () => {
                 <div className="flex items-center space-x-3">
                   <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                   <div className="flex-1">
-                    <p className="text-sm">Database infrastructure ready</p>
-                    <p className="text-xs text-muted-foreground">All systems operational</p>
+                    <p className="text-sm">Analytics tracking active</p>
+                    <p className="text-xs text-muted-foreground">Page views and user behavior monitored</p>
                   </div>
                 </div>
               </div>

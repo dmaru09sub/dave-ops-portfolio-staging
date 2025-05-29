@@ -22,13 +22,17 @@ export const usePageViewTracking = () => {
     const trackPageView = async () => {
       try {
         const sessionId = getSessionId();
+        const hostname = window.location.hostname;
+        const origin = window.location.origin;
         
-        // Track the page view
+        // Track the page view with host information
         await supabase.from('daveops_page_views').insert({
           page_path: location.pathname,
           user_id: user?.id || null,
           session_id: sessionId,
           user_agent: navigator.userAgent,
+          hostname: hostname,
+          origin: origin,
         });
       } catch (error) {
         console.error('Failed to track page view:', error);

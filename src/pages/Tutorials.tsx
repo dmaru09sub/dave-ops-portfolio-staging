@@ -1,205 +1,231 @@
 
-import { useState, useEffect } from "react";
+import React from 'react';
+import { SiteHeader } from "@/components/site-header";
+import MainLayout from "@/components/layouts/main-layout";
+import { PortfolioFooter } from "@/components/portfolio-footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { SiteHeader } from "@/components/site-header";
-import MainLayout from "@/components/layouts/main-layout";
-import { Clock, ExternalLink, GitBranch, BookOpen, Target } from "lucide-react";
-import { Link } from 'react-router-dom';
-import { TutorialSeriesService } from '@/services/tutorial-series-service';
-import { useScrollToTop } from '@/hooks/use-scroll-to-top';
-import type { TutorialSeries, TutorialItem } from '@/types/tutorial-types';
+import { BookOpen, Clock, ExternalLink, Play, Users } from "lucide-react";
+import { Link } from "react-router-dom";
+import { usePageViewTracking } from "@/hooks/use-page-view-tracking";
+import { useSiteTitle } from "@/hooks/use-site-title";
 
 const Tutorials = () => {
-  useScrollToTop();
-  
-  const [tutorialSeries, setTutorialSeries] = useState<TutorialSeries[]>([]);
-  const [loading, setLoading] = useState(true);
+  usePageViewTracking();
+  useSiteTitle('Tutorials');
 
-  useEffect(() => {
-    const fetchTutorialSeries = async () => {
-      try {
-        const data = await TutorialSeriesService.getTutorialSeries();
-        setTutorialSeries(data);
-      } catch (error) {
-        console.error('Error fetching tutorial series:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const tutorials = [
+    {
+      id: "portfolio-setup",
+      title: "Portfolio Setup Guide",
+      description: "Step-by-step guide to setting up your own portfolio using modern web technologies and best practices.",
+      difficulty: "Beginner",
+      duration: "30 min",
+      topics: ["React", "TypeScript", "Supabase", "Portfolio"],
+      link: "/tutorials/portfolio-setup",
+      available: true,
+      featured: true
+    },
+    {
+      id: "cicd-pipeline",
+      title: "Complete CI/CD Pipeline Setup",
+      description: "Learn to build a comprehensive 3-stage deployment pipeline with GitHub Actions, automated testing, and production deployment.",
+      difficulty: "Intermediate",
+      duration: "45 min",
+      topics: ["GitHub Actions", "CI/CD", "DevOps", "Automation"],
+      link: "/tutorials/cicd-pipeline",
+      available: true,
+      featured: true
+    },
+    {
+      id: "devops-best-practices",
+      title: "DevOps Best Practices",
+      description: "Essential DevOps practices for modern development teams including infrastructure as code and monitoring.",
+      difficulty: "Advanced",
+      duration: "60 min",
+      topics: ["DevOps", "Infrastructure", "Monitoring", "Security"],
+      link: "#",
+      available: false,
+      comingSoon: true
+    },
+    {
+      id: "cloud-architecture",
+      title: "Scalable Cloud Architecture",
+      description: "Design and implement scalable cloud solutions using modern cloud-native technologies and patterns.",
+      difficulty: "Advanced",
+      duration: "75 min",
+      topics: ["Cloud", "Architecture", "Scalability", "Microservices"],
+      link: "#",
+      available: false,
+      comingSoon: true
+    }
+  ];
 
-    fetchTutorialSeries();
-  }, []);
-
-  const getDifficultyColor = (level: string) => {
-    switch (level.toLowerCase()) {
-      case 'beginner': return 'bg-green-100 text-green-800';
-      case 'intermediate': return 'bg-yellow-100 text-yellow-800';
-      case 'advanced': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+  const getDifficultyColor = (difficulty: string) => {
+    switch (difficulty.toLowerCase()) {
+      case 'beginner': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      case 'intermediate': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      case 'advanced': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
     }
   };
-
-  const renderTutorialCard = (tutorial: TutorialItem) => {
-    const isCI_CD = tutorial.title.toLowerCase().includes('ci/cd') || tutorial.title.toLowerCase().includes('pipeline');
-    const isComingSoon = tutorial.status === 'coming-soon';
-    const duration = tutorial.duration || tutorial.estimated_duration;
-    const difficulty = tutorial.difficulty || 'beginner';
-    const tutorialPath = tutorial.path || `/tutorials/${tutorial.id}`;
-    
-    return (
-      <Card key={tutorial.id} className="hover:shadow-lg transition-shadow duration-300 h-full flex flex-col">
-        <CardHeader className="flex-1">
-          <div className="flex items-start justify-between">
-            <div className="flex items-start gap-3 min-w-0 flex-1">
-              {isCI_CD && <GitBranch className="h-5 w-5 text-primary flex-shrink-0 mt-1" />}
-              <div className="min-w-0 flex-1">
-                <CardTitle className="text-base font-medium leading-tight">{tutorial.title}</CardTitle>
-                <CardDescription className="text-sm mt-1 line-clamp-2">{tutorial.description}</CardDescription>
-              </div>
-            </div>
-            <div className="flex gap-2 flex-shrink-0 ml-2">
-              {isComingSoon && <Badge variant="outline" className="text-xs">Coming Soon</Badge>}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3 pt-0">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-              {duration && (
-                <div className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  {duration} min
-                </div>
-              )}
-              {difficulty && (
-                <Badge className={`${getDifficultyColor(difficulty)} text-xs`}>
-                  {difficulty}
-                </Badge>
-              )}
-            </div>
-            
-            {isComingSoon ? (
-              <Button variant="outline" disabled size="sm" className="text-xs">
-                Coming Soon
-              </Button>
-            ) : (
-              <Link to={tutorialPath}>
-                <Button size="sm" className="text-xs">
-                  Read Tutorial
-                  <ExternalLink className="h-3 w-3 ml-1" />
-                </Button>
-              </Link>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  };
-
-  if (loading) {
-    return (
-      <MainLayout>
-        <SiteHeader />
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-5xl mx-auto">
-            <div className="animate-pulse space-y-8">
-              <div className="text-center space-y-4">
-                <div className="h-8 bg-gray-200 rounded w-1/2 mx-auto"></div>
-                <div className="h-4 bg-gray-200 rounded w-3/4 mx-auto"></div>
-              </div>
-              <div className="space-y-6">
-                {[...Array(2)].map((_, i) => (
-                  <div key={i} className="h-48 bg-gray-200 rounded-lg"></div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </MainLayout>
-    );
-  }
 
   return (
     <MainLayout>
       <SiteHeader />
       
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-5xl mx-auto">
+      <div className="container mx-auto px-4 py-8 flex-1">
+        <div className="max-w-6xl mx-auto">
+          {/* Hero Section */}
           <div className="text-center mb-12">
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">DevOps Tutorials</h1>
-            <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
-              Explore our in-depth tutorial series to master modern web development and deployment techniques
+            <h1 className="text-4xl font-bold mb-4">Tutorials & Guides</h1>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Learn modern DevOps practices, cloud architecture, and automation through 
+              comprehensive, hands-on tutorials designed for real-world applications.
             </p>
           </div>
 
-          <div className="space-y-8">
-            {tutorialSeries.length > 0 ? (
-              tutorialSeries.map((series) => (
-                <Card key={series.id}>
+          {/* Featured Tutorials */}
+          <div className="mb-12">
+            <h2 className="text-2xl font-semibold mb-6 flex items-center gap-2">
+              <BookOpen className="h-6 w-6" />
+              Featured Tutorials
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {tutorials.filter(tutorial => tutorial.featured).map((tutorial) => (
+                <Card key={tutorial.id} className="hover:shadow-lg transition-shadow duration-200">
                   <CardHeader>
-                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                      <div className="min-w-0 flex-1">
-                        <CardTitle className="text-xl md:text-2xl font-semibold">{series.title}</CardTitle>
-                        <CardDescription className="text-sm md:text-base mt-2">{series.description}</CardDescription>
-                      </div>
-                      <Badge className={`${getDifficultyColor(series.difficulty_level)} flex-shrink-0 w-fit`}>
-                        {series.difficulty_level}
+                    <div className="flex justify-between items-start mb-2">
+                      <CardTitle className="text-xl">{tutorial.title}</CardTitle>
+                      <Badge className={getDifficultyColor(tutorial.difficulty)}>
+                        {tutorial.difficulty}
                       </Badge>
                     </div>
-                    
-                    <div className="flex flex-wrap items-center gap-4 text-xs md:text-sm text-muted-foreground mt-4">
-                      <div className="flex items-center gap-1">
-                        <BookOpen className="h-4 w-4 flex-shrink-0" />
-                        <span>{series.tutorials.length} tutorials</span>
-                      </div>
-                      {series.estimated_duration && (
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-4 w-4 flex-shrink-0" />
-                          <span>{Math.round(series.estimated_duration / 60)} hours</span>
-                        </div>
-                      )}
-                      {series.prerequisites.length > 0 && (
-                        <div className="flex items-center gap-1">
-                          <Target className="h-4 w-4 flex-shrink-0" />
-                          <span>{series.prerequisites.length} prerequisites</span>
-                        </div>
-                      )}
-                    </div>
+                    <CardDescription className="text-sm">
+                      {tutorial.description}
+                    </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    {series.prerequisites.length > 0 && (
-                      <div>
-                        <h4 className="font-medium mb-2 text-sm">Prerequisites:</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {series.prerequisites.map((prereq, index) => (
-                            <Badge key={index} variant="outline" className="text-xs">{prereq}</Badge>
-                          ))}
-                        </div>
+                  <CardContent>
+                    <div className="flex items-center gap-4 mb-4 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-4 w-4" />
+                        {tutorial.duration}
                       </div>
-                    )}
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {series.tutorials.map((tutorial) => renderTutorialCard(tutorial))}
+                      <div className="flex items-center gap-1">
+                        <Users className="h-4 w-4" />
+                        {tutorial.difficulty}
+                      </div>
                     </div>
+                    
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {tutorial.topics.map((topic) => (
+                        <Badge key={topic} variant="outline" className="text-xs">
+                          {topic}
+                        </Badge>
+                      ))}
+                    </div>
+
+                    {tutorial.available ? (
+                      <Button asChild className="w-full">
+                        <Link to={tutorial.link}>
+                          <Play className="h-4 w-4 mr-2" />
+                          Start Tutorial
+                        </Link>
+                      </Button>
+                    ) : (
+                      <Button disabled className="w-full">
+                        Coming Soon
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
-              ))
-            ) : (
-              <Card>
-                <CardContent className="p-8 text-center">
-                  <h3 className="text-lg md:text-xl font-semibold mb-4">More tutorial series coming soon!</h3>
-                  <p className="text-sm md:text-base text-muted-foreground max-w-2xl mx-auto">
-                    I'm working on creating comprehensive tutorial series covering DevOps best practices, 
-                    cloud architecture patterns, and automation workflows.
-                  </p>
-                </CardContent>
-              </Card>
-            )}
+              ))}
+            </div>
+          </div>
+
+          {/* All Tutorials */}
+          <div>
+            <h2 className="text-2xl font-semibold mb-6">All Tutorials</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {tutorials.map((tutorial) => (
+                <Card key={tutorial.id} className="hover:shadow-lg transition-shadow duration-200">
+                  <CardHeader className="pb-3">
+                    <div className="flex justify-between items-start mb-2">
+                      <CardTitle className="text-lg leading-tight">{tutorial.title}</CardTitle>
+                      <Badge className={getDifficultyColor(tutorial.difficulty)}>
+                        {tutorial.difficulty}
+                      </Badge>
+                    </div>
+                    <CardDescription className="text-sm line-clamp-3">
+                      {tutorial.description}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="flex items-center gap-3 mb-3 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {tutorial.duration}
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-1 mb-4">
+                      {tutorial.topics.slice(0, 3).map((topic) => (
+                        <Badge key={topic} variant="outline" className="text-xs">
+                          {topic}
+                        </Badge>
+                      ))}
+                      {tutorial.topics.length > 3 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{tutorial.topics.length - 3}
+                        </Badge>
+                      )}
+                    </div>
+
+                    {tutorial.available ? (
+                      <Button asChild className="w-full">
+                        <Link to={tutorial.link}>
+                          <Play className="h-3 w-3 mr-2" />
+                          Start
+                        </Link>
+                      </Button>
+                    ) : tutorial.comingSoon ? (
+                      <Button disabled className="w-full">
+                        Coming Soon
+                      </Button>
+                    ) : (
+                      <Button disabled className="w-full">
+                        Unavailable
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+
+          {/* CTA Section */}
+          <div className="mt-16 text-center">
+            <Card className="bg-gradient-to-r from-primary/5 to-secondary/5 border-primary/20">
+              <CardContent className="p-8">
+                <h3 className="text-2xl font-semibold mb-4">Want to suggest a tutorial?</h3>
+                <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
+                  Have an idea for a tutorial or want to see coverage of a specific topic? 
+                  I'd love to hear from you and create content that helps the community.
+                </p>
+                <Button asChild>
+                  <Link to="/contact">
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Get in Touch
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
+      
+      <PortfolioFooter />
     </MainLayout>
   );
 };

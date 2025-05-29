@@ -19,7 +19,33 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Check if changelog entry should be created
+        id: should-create
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            COMMIT_MESSAGE="${{ github.event.pull_request.title }}"
+          else
+            COMMIT_MESSAGE=$(git log -1 --pretty=format:'%s')
+          fi
+          
+          # Skip if commit message contains these keywords (indicating automated/minor changes)
+          if echo "$COMMIT_MESSAGE" | grep -qi "\[skip changelog\]\|\[no changelog\]\|update dependencies\|fix typo\|formatting\|whitespace\|refactor comments"; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "Skipping changelog entry for: $COMMIT_MESSAGE"
+            exit 0
+          fi
+          
+          # Only create entries for significant changes
+          if echo "$COMMIT_MESSAGE" | grep -qi "feat\|fix\|add\|implement\|create\|update.*functionality\|breaking"; then
+            echo "skip=false" >> $GITHUB_OUTPUT
+            echo "Creating changelog entry for: $COMMIT_MESSAGE"
+          else
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "Skipping minor change: $COMMIT_MESSAGE"
+          fi
+
       - name: Get commit info
+        if: steps.should-create.outputs.skip == 'false'
         id: commit-info
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
@@ -38,30 +64,26 @@ jobs:
             PR_URL=""
           fi
           
-          # Get affected files
-          AFFECTED_FILES=$(git diff --name-only HEAD~1 HEAD | jq -R -s -c 'split("\n")[:-1]')
+          # Get affected files (limit to important file types)
+          AFFECTED_FILES=$(git diff --name-only HEAD~1 HEAD | grep -E '\.(tsx?|jsx?|py|sql|yml|yaml)$' | head -10 | jq -R -s -c 'split("\n")[:-1]')
           
-          # Determine change type based on commit message or file changes
-          CHANGE_TYPE="feature"
-          if echo "$COMMIT_MESSAGE" | grep -qi "fix\|bug"; then
+          # Determine change type based on commit message
+          CHANGE_TYPE="enhancement"
+          if echo "$COMMIT_MESSAGE" | grep -qi "fix\|bug\|resolve"; then
             CHANGE_TYPE="bugfix"
-          elif echo "$COMMIT_MESSAGE" | grep -qi "feat\|add"; then
+          elif echo "$COMMIT_MESSAGE" | grep -qi "feat\|add.*feature\|implement"; then
             CHANGE_TYPE="feature"
-          elif echo "$COMMIT_MESSAGE" | grep -qi "refactor"; then
-            CHANGE_TYPE="refactor"
-          elif echo "$COMMIT_MESSAGE" | grep -qi "docs\|readme"; then
-            CHANGE_TYPE="documentation"
-          elif echo "$COMMIT_MESSAGE" | grep -qi "test"; then
-            CHANGE_TYPE="testing"
-          elif echo "$COMMIT_MESSAGE" | grep -qi "chore\|deps"; then
-            CHANGE_TYPE="maintenance"
+          elif echo "$COMMIT_MESSAGE" | grep -qi "breaking"; then
+            CHANGE_TYPE="breaking"
+          elif echo "$COMMIT_MESSAGE" | grep -qi "security"; then
+            CHANGE_TYPE="security"
           fi
           
           # Determine severity
           SEVERITY="minor"
           if echo "$COMMIT_MESSAGE" | grep -qi "breaking\|major"; then
             SEVERITY="major"
-          elif echo "$COMMIT_MESSAGE" | grep -qi "critical\|urgent"; then
+          elif echo "$COMMIT_MESSAGE" | grep -qi "critical\|urgent\|hotfix"; then
             SEVERITY="critical"
           fi
           
@@ -76,7 +98,30 @@ jobs:
           echo "severity=$SEVERITY" >> $GITHUB_OUTPUT
           echo "branch=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
 
+      - name: Check for existing changelog entry
+        if: steps.should-create.outputs.skip == 'false'
+        id: check-existing
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          COMMIT_SHA: ${{ steps.commit-info.outputs.commit_sha }}
+        run: |
+          # Check if changelog entry already exists for this commit
+          EXISTING=$(curl -s -X GET \
+            "$SUPABASE_URL/rest/v1/daveops_changelog_entries?github_commit_hash=eq.$COMMIT_SHA&select=id" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            -H "Content-Type: application/json")
+          
+          if [ "$(echo $EXISTING | jq '. | length')" -gt 0 ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Changelog entry already exists for commit $COMMIT_SHA"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "No existing changelog entry found for commit $COMMIT_SHA"
+          fi
+
       - name: Create changelog entry
+        if: steps.should-create.outputs.skip == 'false' && steps.check-existing.outputs.exists == 'false'
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
@@ -109,10 +154,10 @@ jobs:
             "metadata": {
               "github_workflow": "${{ github.workflow }}",
               "github_run_id": "${{ github.run_id }}",
-              "github_run_number": "${{ github.run_number }}",
               "repository": "${{ github.repository }}",
               "branch": "$BRANCH",
-              "event_type": "${{ github.event_name }}"
+              "event_type": "${{ github.event_name }}",
+              "filtered": true
             },
             "affected_files": $AFFECTED_FILES,
             "published": true
@@ -128,16 +173,16 @@ jobs:
             -H "Prefer: return=minimal" \
             -d "$CHANGELOG_DATA"
 
-      - name: Notify deployment status
-        if: success()
+      - name: Notify result
+        if: always()
         run: |
-          echo "✅ Changelog entry created successfully for commit ${{ steps.commit-info.outputs.commit_sha }}"
-          echo "📝 Change Type: ${{ steps.commit-info.outputs.change_type }}"
-          echo "🔍 Severity: ${{ steps.commit-info.outputs.severity }}"
-          echo "👤 Author: ${{ steps.commit-info.outputs.author_name }}"
-          
-      - name: Handle failure
-        if: failure()
-        run: |
-          echo "❌ Failed to create changelog entry for commit ${{ steps.commit-info.outputs.commit_sha }}"
-          echo "Please check the Supabase configuration and API permissions"
+          if [ "${{ steps.should-create.outputs.skip }}" = "true" ]; then
+            echo "⏭️ Changelog entry skipped - not a significant change"
+          elif [ "${{ steps.check-existing.outputs.exists }}" = "true" ]; then
+            echo "ℹ️ Changelog entry already exists for this commit"
+          else
+            echo "✅ Changelog entry created successfully for commit ${{ steps.commit-info.outputs.commit_sha }}"
+            echo "📝 Change Type: ${{ steps.commit-info.outputs.change_type }}"
+            echo "🔍 Severity: ${{ steps.commit-info.outputs.severity }}"
+            echo "👤 Author: ${{ steps.commit-info.outputs.author_name }}"
+          fi

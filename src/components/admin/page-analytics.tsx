@@ -3,10 +3,20 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { usePageViewStats } from '@/hooks/use-page-view-stats';
-import { Eye, Users, Calendar, TrendingUp, Activity } from 'lucide-react';
+import { Eye, Users, Calendar, TrendingUp, Activity, AlertCircle, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const PageAnalytics: React.FC = () => {
-  const { data: pageStats, isLoading, error } = usePageViewStats();
+  const { data: pageStats, isLoading, error, refetch } = usePageViewStats();
+
+  const formatPagePath = (path: string) => {
+    if (path === '/') return 'Home';
+    return path.replace('/', '').replace(/^\w/, c => c.toUpperCase());
+  };
+
+  const totalViews = pageStats?.reduce((sum, page) => sum + page.total_views, 0) || 0;
+  const totalUniqueViews = pageStats?.reduce((sum, page) => sum + page.unique_views, 0) || 0;
+  const todayViews = pageStats?.reduce((sum, page) => sum + page.views_today, 0) || 0;
 
   if (isLoading) {
     return (
@@ -20,9 +30,12 @@ const PageAnalytics: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="animate-pulse space-y-4">
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-            <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+            <div className="grid gap-4 md:grid-cols-3">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="h-24 bg-gray-200 rounded"></div>
+              ))}
+            </div>
+            <div className="h-64 bg-gray-200 rounded"></div>
           </div>
         </CardContent>
       </Card>
@@ -34,23 +47,25 @@ const PageAnalytics: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            Page Analytics
+            <AlertCircle className="h-5 w-5 text-destructive" />
+            Analytics Error
           </CardTitle>
           <CardDescription>Failed to load page view statistics</CardDescription>
         </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-4">
+            <p className="text-muted-foreground">
+              Error: {error instanceof Error ? error.message : 'Unknown error occurred'}
+            </p>
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Retry
+            </Button>
+          </div>
+        </CardContent>
       </Card>
     );
   }
-
-  const formatPagePath = (path: string) => {
-    if (path === '/') return 'Home';
-    return path.replace('/', '').replace(/^\w/, c => c.toUpperCase());
-  };
-
-  const totalViews = pageStats?.reduce((sum, page) => sum + page.total_views, 0) || 0;
-  const totalUniqueViews = pageStats?.reduce((sum, page) => sum + page.unique_views, 0) || 0;
-  const todayViews = pageStats?.reduce((sum, page) => sum + page.views_today, 0) || 0;
 
   return (
     <div className="space-y-6">
@@ -132,7 +147,9 @@ const PageAnalytics: React.FC = () => {
             </Table>
           ) : (
             <div className="text-center py-8 text-muted-foreground">
-              No page view data available yet. Visit some pages to start tracking!
+              <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p className="text-lg font-medium mb-2">No Data Available</p>
+              <p>No page view data available yet. Visit some pages to start tracking!</p>
             </div>
           )}
         </CardContent>

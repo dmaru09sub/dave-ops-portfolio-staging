@@ -5,9 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { EnhancedMarkdownRenderer } from '@/components/markdown/enhanced-markdown-renderer';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Save, Edit, Eye, EyeOff } from 'lucide-react';
+import { Save, Edit, Eye, EyeOff, FileText } from 'lucide-react';
 
 interface AboutContent {
   id: string;
@@ -163,7 +165,12 @@ const AdminAbout = () => {
     <AdminLayout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">About Content Management</h1>
+          <div>
+            <h1 className="text-3xl font-bold">About Content Management</h1>
+            <p className="text-muted-foreground">
+              Edit your about page content with markdown support
+            </p>
+          </div>
           <div className="flex gap-2">
             {content && (
               <Button
@@ -196,13 +203,16 @@ const AdminAbout = () => {
         {editing ? (
           <Card>
             <CardHeader>
-              <CardTitle>Edit About Content</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Edit About Content
+              </CardTitle>
               <CardDescription>
-                Update the main about content that appears on the About page
+                Use markdown formatting for rich text content
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                   <label className="text-sm font-medium">Title</label>
                   <Input
@@ -213,16 +223,38 @@ const AdminAbout = () => {
                   />
                 </div>
 
-                <div>
-                  <label className="text-sm font-medium">Content</label>
-                  <Textarea
-                    value={formData.content}
-                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                    rows={12}
-                    placeholder="Write your about content here..."
-                    className="min-h-[300px]"
-                  />
-                </div>
+                <Tabs defaultValue="edit" className="w-full">
+                  <TabsList>
+                    <TabsTrigger value="edit">Edit</TabsTrigger>
+                    <TabsTrigger value="preview">Preview</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="edit" className="mt-4">
+                    <div>
+                      <label className="text-sm font-medium">Content (Markdown)</label>
+                      <Textarea
+                        value={formData.content}
+                        onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                        rows={20}
+                        placeholder="Write your about content here using markdown..."
+                        className="min-h-[400px] font-mono"
+                      />
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Use markdown syntax: **bold**, *italic*, # headers, [links](url), `code`, etc.
+                      </p>
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="preview" className="mt-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Preview</label>
+                      <div className="border rounded-lg p-6 bg-card">
+                        <h2 className="text-2xl font-bold mb-4">{formData.title}</h2>
+                        <EnhancedMarkdownRenderer content={formData.content} />
+                      </div>
+                    </div>
+                  </TabsContent>
+                </Tabs>
 
                 <div>
                   <label className="text-sm font-medium">Image URL (Optional)</label>
@@ -266,16 +298,18 @@ const AdminAbout = () => {
             </CardHeader>
             <CardContent>
               {content ? (
-                <div className="space-y-4">
+                <div className="space-y-6">
                   <div>
                     <h3 className="font-semibold text-lg">{content.title}</h3>
                     <p className="text-sm text-muted-foreground">
                       Last updated: {new Date(content.updated_at).toLocaleDateString()}
                     </p>
                   </div>
-                  <div className="prose prose-gray max-w-none">
-                    <p className="whitespace-pre-line text-sm">{content.content}</p>
+                  
+                  <div className="border rounded-lg p-6 bg-muted/30">
+                    <EnhancedMarkdownRenderer content={content.content} />
                   </div>
+                  
                   {content.image_url && (
                     <div>
                       <p className="text-sm font-medium">Image URL:</p>

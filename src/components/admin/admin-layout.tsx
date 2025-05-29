@@ -2,8 +2,10 @@
 import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { useDomainContext } from "@/hooks/use-domain-context";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { Rocket, FolderOpen, User, Mail, BookOpen, Info, TestTube, PenTool, LogOut, Settings, ExternalLink } from "lucide-react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Rocket, FolderOpen, User, Mail, BookOpen, Info, TestTube, PenTool, LogOut, Settings, ExternalLink, BarChart3 } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -15,6 +17,13 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Handle redirect in useEffect to avoid state updates during render
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      navigate('/admin/login');
+    }
+  }, [isAuthenticated, loading, navigate]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -24,8 +33,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   }
 
   if (!isAuthenticated) {
-    navigate('/admin/login');
-    return null;
+    return null; // Will redirect via useEffect
   }
 
   const handleLogout = async () => {
@@ -41,6 +49,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
     { title: "Tutorials", url: "/admin/tutorials", icon: BookOpen, publicPath: "/tutorials" },
     { title: "Blog", url: "/admin/blog", icon: PenTool, publicPath: "/blog" },
     { title: "Contact", url: "/admin/contact", icon: Mail, publicPath: "/contact" },
+    { title: "Analytics", url: "/admin/analytics", icon: BarChart3, publicPath: "/" },
     { title: "Site Info", url: "/admin/info", icon: Info, publicPath: "/" },
     { title: "Tests", url: "/admin/tests", icon: TestTube, publicPath: "/" },
   ];

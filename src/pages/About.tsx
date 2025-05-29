@@ -2,12 +2,16 @@
 import { SiteHeader } from "@/components/site-header";
 import MainLayout from "@/components/layouts/main-layout";
 import { AboutHero } from "@/components/about/about-hero";
-import { AboutContent } from "@/components/about/about-content";
+import { EnhancedAboutContent } from "@/components/about/enhanced-about-content";
 import { EnhancedContactInfo } from "@/components/about/enhanced-contact-info";
 import { PortfolioFooter } from "@/components/portfolio-footer";
 import { useAboutData } from "@/hooks/use-about-data";
+import { usePageViewTracking } from "@/hooks/use-page-view-tracking";
+import { useSiteTitle } from "@/hooks/use-site-title";
 
 const About = () => {
+  usePageViewTracking();
+  useSiteTitle('About');
   const { aboutContent, siteInfo, loading } = useAboutData();
 
   if (loading) {
@@ -41,14 +45,17 @@ const About = () => {
   return (
     <MainLayout>
       <SiteHeader />
-      
+
       <div className="container mx-auto px-4 py-8 flex-1">
         <div className="max-w-4xl mx-auto">
           <AboutHero />
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
-              <AboutContent aboutContent={aboutContent} />
+              <EnhancedAboutContent />
+
+
+
             </div>
             <div className="lg:col-span-1">
               <EnhancedContactInfo siteInfo={siteInfo} />
@@ -56,7 +63,7 @@ const About = () => {
           </div>
         </div>
       </div>
-      
+
       <PortfolioFooter />
     </MainLayout>
   );
