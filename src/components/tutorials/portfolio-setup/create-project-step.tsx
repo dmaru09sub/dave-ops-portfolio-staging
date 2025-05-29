@@ -14,7 +14,7 @@ export const CreateProjectStep = () => {
         </p>
         <Button variant="outline" size="sm" asChild className="w-fit">
           <a
-            href="https://github.com/daveops-portfolio/daveops-portfolio"
+            href="https://github.com/dmaru09sub/dave-ops-portfolio-staging"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2"
